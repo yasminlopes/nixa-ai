@@ -1,0 +1,174 @@
+@import '../shared/styles/animations.css';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --sidebar-width: 260px;
+    --color-bg: #fdfefe;
+    --color-surface: #d4e0f3;
+    --color-text: #17223d;
+    --color-primary: #4f7a96;
+    --color-accent: #4cacc7;
+    --color-cyan: #7addf1;
+    --color-muted: #94a6b8;
+    --color-border: #d4e0f3;
+    --color-hover: #e8f0f8;
+  }
+
+  .dark {
+    --color-bg: #0f1419;
+    --color-surface: #1a1f2e;
+    --color-text: #e4e6eb;
+    --color-primary: #6b9dc4;
+    --color-accent: #5bc0de;
+    --color-cyan: #7addf1;
+    --color-muted: #6b7280;
+    --color-border: #2d3748;
+    --color-hover: #252d3d;
+  }
+
+  * {
+    box-sizing: border-box;
+  }
+
+  html,
+  body {
+    height: 100%;
+    overflow: hidden;
+    background: var(--color-bg);
+    color: var(--color-text);
+  }
+
+  /* Custom scrollbar */
+  ::-webkit-scrollbar {
+    width: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: var(--color-muted);
+    border-radius: 3px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--color-primary);
+  }
+}
+
+@layer utilities {
+  .scrollbar-thin {
+    scrollbar-width: thin;
+  }
+
+  /* Blinking cursor for streaming text */
+  .streaming-cursor::after {
+    content: '▋';
+    animation: blink 1s step-end infinite;
+    color: #4f7a96;
+    margin-left: 1px;
+  }
+
+  @keyframes blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0; }
+  }
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(8px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+}
+
+/* Markdown prose overrides inside messages */
+.prose-message {
+  line-height: 1.65;
+}
+
+.prose-message p {
+  margin: 0 0 0.75rem;
+}
+
+.prose-message p:last-child {
+  margin-bottom: 0;
+}
+
+.prose-message ul,
+.prose-message ol {
+  margin: 0.5rem 0 0.75rem 1.25rem;
+}
+
+.prose-message li {
+  margin-bottom: 0.25rem;
+}
+
+.prose-message h1,
+.prose-message h2,
+.prose-message h3 {
+  font-weight: 600;
+  margin: 1rem 0 0.5rem;
+  line-height: 1.3;
+}
+
+.prose-message h1 { font-size: 1.25rem; }
+.prose-message h2 { font-size: 1.1rem; }
+.prose-message h3 { font-size: 1rem; }
+
+.prose-message table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+  margin: 0.75rem 0;
+}
+
+.prose-message th,
+.prose-message td {
+  border: 1px solid var(--color-border);
+  padding: 0.5rem 0.75rem;
+  text-align: left;
+}
+
+.prose-message th {
+  background: var(--color-surface);
+  font-weight: 600;
+}
+
+.prose-message blockquote {
+  border-left: 3px solid var(--color-primary);
+  padding-left: 1rem;
+  margin: 0.75rem 0;
+  color: var(--color-muted);
+  font-style: italic;
+}
+
+.prose-message a {
+  color: var(--color-accent);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.prose-message code:not(pre code) {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  padding: 0.125rem 0.375rem;
+  font-size: 0.85em;
+  font-family: 'Fira Code', 'Cascadia Code', monospace;
+}
+
+.prose-message pre {
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+.prose-message * {
+  max-width: 100%;
+}
