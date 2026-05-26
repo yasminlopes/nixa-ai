@@ -1,5 +1,6 @@
 'use client'
 
+import { useEffect, useState } from 'react'
 import { Message as MessageType } from '@/shared/types'
 import { cn } from '@/shared/utils/cn'
 import { ChatBubble } from './ChatBubble'
@@ -12,38 +13,47 @@ interface MessageProps {
 
 export function Message({ message, isStreaming }: MessageProps) {
   const isUser = message.role === 'user'
-  const variant = isUser ? 'user' : 'assistant'
+  const [userAvatar, setUserAvatar] = useState<string | null>(null)
+  const [userName, setUserName] = useState('Y')
+
+  useEffect(() => {
+    if (!isUser) return
+    setUserAvatar(localStorage.getItem('nixa-user-avatar')?.trim() || null)
+    const n = localStorage.getItem('nixa-user-name')?.trim()
+    if (n) setUserName(n.slice(0, 1).toUpperCase())
+  }, [isUser])
 
   return (
     <div
       className={cn(
-        'flex gap-2.5 px-4 py-4 group w-full min-w-0',
-        'transition-all duration-300 ease-out',
-        isUser 
-          ? 'justify-end animate-slideInFromRight' 
-          : 'justify-start animate-slideInFromLeft'
+        'flex gap-3 w-full min-w-0 py-3 transition-all duration-300 ease-out',
+        isUser ? 'justify-end animate-slideInFromRight' : 'animate-slideInFromLeft'
       )}
     >
-      {/* Assistant Avatar (left) */}
-      {!isUser && <Avatar variant="assistant" src="/assets/nixa.png" />}
+      {!isUser && <Avatar variant="assistant" size="md" />}
 
-      {/* Message Bubble */}
       <div
         className={cn(
-          'max-w-[80%] sm:max-w-[75%] md:max-w-[70%] min-w-0 flex flex-col gap-1',
-          isUser ? 'items-end' : 'items-start'
+          'max-w-[82%] min-w-0',
+          isUser ? 'flex flex-col items-end' : 'flex-1'
         )}
       >
         <ChatBubble
           content={message.content}
           sources={message.sources}
-          variant={variant}
+          variant={isUser ? 'user' : 'assistant'}
           isStreaming={isStreaming}
         />
       </div>
 
-      {/* User Avatar (right) */}
-      {isUser && <Avatar variant="user" />}
+      {isUser && (
+        <Avatar
+          variant="user"
+          src={userAvatar || undefined}
+          fallback={userName}
+          size="md"
+        />
+      )}
     </div>
   )
 }

@@ -4,6 +4,7 @@ import { getAnthropicEmbedding } from './anthropic'
 import { getGroqEmbedding } from './groq'
 import { getGeminiEmbedding } from './gemini'
 import { getHuggingFaceEmbedding } from './huggingface'
+import { getOllamaEmbedding } from './ollama'
 
 export async function getEmbeddingForProvider(
   provider: EmbeddingProvider,
@@ -24,6 +25,8 @@ export async function getEmbeddingForProvider(
       return getGeminiEmbedding(text, apiKey, onWarning)
     case 'huggingface':
       return getHuggingFaceEmbedding(text, apiKey, onWarning)
+    case 'ollama':
+      return getOllamaEmbedding(text, apiKey, onWarning)
     default:
       throw new Error(`Unknown embedding provider: ${provider}`)
   }

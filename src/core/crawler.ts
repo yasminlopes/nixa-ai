@@ -74,15 +74,87 @@ export const SEED_URLS: string[] = [
   'https://nice-devone.github.io/nice-cxone-mobile-sdk-android/',
   'https://nice-devone.github.io/nice-cxone-mobile-sdk-ios/',
 
-  // ── npm — @nice-devone packages (READMEs) ────────────────────────────────
-  'https://www.npmjs.com/package/@nice-devone/agent-sdk?activeTab=readme',
-  'https://www.npmjs.com/package/@nice-devone/core-sdk?activeTab=readme',
-  'https://www.npmjs.com/package/@nice-devone/auth-sdk?activeTab=readme',
-  'https://www.npmjs.com/package/@nice-devone/voice-sdk?activeTab=readme',
-  'https://www.npmjs.com/package/@nice-devone/acd-sdk?activeTab=readme',
-  'https://www.npmjs.com/package/@nice-devone/common-sdk?activeTab=readme',
-  'https://www.npmjs.com/package/@nice-devone/digital-sdk?activeTab=readme',
-  'https://www.npmjs.com/package/@nice-devone/nice-cxone-chat-web-sdk?activeTab=readme',
+  // ── npm — pulado: páginas npmjs.com são SPAs, sem HTML pra crawlear.
+  //    O conteúdo dos READMEs vem dos repositórios GitHub acima.
+
+  // ─── Enlighten Copilot / AI features (validated 2026) ───────────────────
+  'https://help.nicecxone.com/content/copilotagents/copilotforagents.htm',
+  'https://help.nicecxone.com/content/aiassistantsandbots/agentassisthub/copilotforagents/enlightencopilotforagents.htm',
+  'https://help.nicecxone.com/content/aiassistantsandbots/agentassisthub/copilotforagents/createenlightencopilotforagentsprofiles.htm',
+  'https://help.nicecxone.com/Content/agent/cxoneagentformt/enlightencopilotforagentscxamt.htm',
+  'https://help.nicecxone.com/content/supervisorwem/enlightencopilotforsupervisors.htm',
+  'https://help.nicecxone.com/content/enlightenautosummary/enlightenautosummary.htm',
+  'https://help.nicecxone.com/content/aiassistantsandbots/agentassisthub/autosummary/autosummary.htm',
+  'https://help.nicecxone.com/content/aiassistantsandbots/agentassisthub/autosummary/createautosummaryprofiles.htm',
+  'https://help.nicecxone.com/content/aiassistantsandbots/agentassisthub/rtig/rtigforadministrators.htm',
+  'https://help.nicecxone.com/content/aiassistantsandbots/agentassisthub/rtig/setuprtig.htm',
+  'https://help.nicecxone.com/content/aiassistantsandbots/agentassisthub/rtig/configurebehaviorguidance.htm',
+  'https://help.nicecxone.com/content/aiassistantsandbots/agentassisthub/rtig/managertig.htm',
+  'https://help.nicecxone.com/content/agent/cxoneagent/realtimeinteractionguidancecxa.htm',
+  'https://help.nicecxone.com/content/globalfeatures/enlighten/enlightenai.htm',
+  'https://help.nicecxone.com/content/acd/routing/enlightenairouting.htm',
+
+  // ─── Developer APIs — endpoints específicos ─────────────────────────────
+  'https://developer.niceincontact.com/Documentation/APIAuthenticationAndAuthorization',
+  'https://developer.niceincontact.com/api/authenticationapi',
+  'https://developer.niceincontact.com/API/AdminAPI',
+  'https://developer.niceincontact.com/API/AgentAPI',
+  'https://developer.niceincontact.com/API/UserHubAPI',
+  'https://developer.niceincontact.com/API/RealTimeDataAPI',
+  'https://developer.niceincontact.com/API/WFMAPI',
+  'https://developer.niceincontact.com/api/dataextractionapi',
+  'https://developer.niceincontact.com/api/digitalengagementapi',
+
+  // ─── Studio / Scripts ───────────────────────────────────────────────────
+  'https://help.nicecxone.com/content/studio/cxstudio.htm',
+  'https://help.nicecxone.com/content/studio/fundamentals/fundamentalscx.htm',
+  'https://help.nicecxone.com/content/studio/fundamentals/actionbasicscx.htm',
+  'https://help.nicecxone.com/content/studio/gettingstarted/developbasicscriptcx.htm',
+  'https://help.nicecxone.com/content/studio/guide/predefinedvariables.htm',
+  'https://help.nicecxone.com/content/studio/fundamentals/customcodesnippets.htm',
+  'https://help.nicecxone.com/content/studio/actionscx/snippet/snippet.htm',
+  'https://help.nicecxone.com/Content/studio/fundamentals/prompts.htm',
+  'https://help.nicecxone.com/Content/studio/advanced/asr/asr.htm',
+
+  // ─── Quality Management (QM) ────────────────────────────────────────────
+  'https://help.nicecxone.com/content/qmanalytics/welcometoqualitymanagement.htm',
+  'https://help.nicecxone.com/content/qmanalytics/evaluate/evaluatinganinteraction.htm',
+  'https://help.nicecxone.com/content/qmanalytics/formmanager/formmanager.htm',
+  'https://help.nicecxone.com/content/qmanalytics/auto%20score/scorecard%20manager.htm',
+  'https://help.nicecxone.com/content/qmanalytics/monitor/qualityperformance.htm',
+
+  // ─── Workforce Management (WFM) ─────────────────────────────────────────
+  'https://help.nicecxone.com/content/workforcemanagement/welcometoworkforcemanagement.htm',
+  'https://help.nicecxone.com/content/workforcemanagement/forecastandstaffinggeneration.htm',
+  'https://help.nicecxone.com/content/workforcemanagement/usingforecastingprofiles.htm',
+  'https://help.nicecxone.com/content/workforcemanagement/monitoringrealtimeadherence.htm',
+  'https://help.nicecxone.com/content/workforcemanagement/intraday.htm',
+  'https://help.nicecxone.com/content/workforcemanagement/glossarywfm.htm',
+
+  // ─── ACD / Routing / Channels / Recording / Surveys ─────────────────────
+  'https://help.nicecxone.com/content/acd/channels/additionalchannelfeatures/skills/skills.htm',
+  'https://help.nicecxone.com/content/acd/routing/routing.htm',
+  'https://help.nicecxone.com/content/acd/routing/routingattributes/routingattributes.htm',
+  'https://help.nicecxone.com/content/acd/routing/dynamicdelivery/configureuserskillproficiency.htm',
+  'https://help.nicecxone.com/content/acd/digital/managedigitalskills.htm',
+  'https://help.nicecxone.com/content/recording/waystorecord.htm',
+  'https://help.nicecxone.com/content/recording/managerecordings.htm',
+  'https://help.nicecxone.com/content/searchandplayback/welcometosearch.htm',
+  'https://help.nicecxone.com/content/integratedsolutions/feedbackmanagement/feedbackmanagementoverview.htm',
+  'https://help.nicecxone.com/content/acd/digital/channels/digitalchannels.htm',
+  'https://help.nicecxone.com/content/acd/digital/chat/setuplivechat.htm',
+  'https://help.nicecxone.com/content/acd/digital/channels/cxoneemailchannels.htm',
+  'https://help.nicecxone.com/content/acd/channels/sms/messaging.htm',
+
+  // ─── PT-BR (versões traduzidas para reforço multilíngue) ────────────────
+  'https://help.nicecxone.com/pt-br/content/home.htm',
+  'https://help.nicecxone.com/pt-br/content/studio/cxstudio.htm',
+  'https://help.nicecxone.com/pt-br/content/copilotagents/copilotforagents.htm',
+  'https://help.nicecxone.com/pt-br/content/workforcemanagement/welcometoworkforcemanagement.htm',
+  'https://help.nicecxone.com/pt-br/content/qmanalytics/welcometoqualitymanagement.htm',
+  'https://help.nicecxone.com/pt-br/content/acd/routing/routing.htm',
+  'https://help.nicecxone.com/pt-br/content/acd/channels/additionalchannelfeatures/skills/skills.htm',
+  'https://help.nicecxone.com/pt-br/content/recording/managerecordings.htm',
 ]
 
 // ─── Domínios permitidos para crawl ──────────────────────────────────────────

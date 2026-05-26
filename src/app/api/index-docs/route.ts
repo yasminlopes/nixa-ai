@@ -120,10 +120,17 @@ export async function POST(req: NextRequest) {
             },
           }))
 
-          await addDocChunks(chunks, provider, onWarning)
-          indexedDates.set(url, new Date().toISOString())
-          indexed += chunks.length
-          send(`   ✓ ${chunks.length} chunks (${page.pageType}) — "${page.title}"`)
+          try {
+            await addDocChunks(chunks, provider, onWarning)
+            indexedDates.set(url, new Date().toISOString())
+            indexed += chunks.length
+            send(`   ✓ ${chunks.length} chunks (${page.pageType}) — "${page.title}"`)
+          } catch (embedErr) {
+            errors++
+            const msg = embedErr instanceof Error ? embedErr.message : String(embedErr)
+            send(`   ⚠️ falha no embedding desta página, pulando: ${msg.slice(0, 120)}`)
+            // Não interrompe a indexação geral — continua próximo URL
+          }
 
           // ── Descobrir links filhos ────────────────────────────────────────
           if (depth < maxDepth && visited.size < maxPages) {

@@ -1,4 +1,5 @@
 import type { Config } from 'tailwindcss'
+import { palette, radius, shadows, fontFamily, fontSize } from './src/shared/theme'
 
 const config: Config = {
   content: ['./src/**/*.{js,ts,jsx,tsx,mdx}'],
@@ -6,38 +7,66 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
+        // ─── Accent ──────────────────────────────────────────────────────────
+        accent: palette.accent,
+
+        // ─── Neutral scale ───────────────────────────────────────────────────
+        neutral: palette.neutral,
+
+        // ─── Semantic ────────────────────────────────────────────────────────
+        success: palette.success,
+        warning: palette.warning,
+        error:   palette.error,
+
+        // ─── Legacy aliases (kept for backward compatibility) ─────────────────
+        // Remove gradually as components are migrated to the new tokens.
         nixa: {
-          50: '#fdfefe',
-          100: '#d4e0f3',
-          300: '#9ac5ef',
-          500: '#4f7a96',
-          600: '#425f83',
-          700: '#17223d',
-          800: '#4cacc7',
-          900: '#7addf1',
+          50:  palette.neutral[50],
+          100: palette.neutral[100],
+          200: palette.neutral[200],
+          300: palette.neutral[300],
+          400: palette.neutral[400],
+          500: palette.accent.DEFAULT,
+          600: palette.accent.hover,
+          700: palette.text.primary,
+          800: palette.accent.dark,
+          900: palette.accent.muted,
         },
         dark: {
-          bg: '#0f1419',
-          surface: '#1a1f2e',
-          text: '#e4e6eb',
-          primary: '#6b9dc4',
-          accent: '#5bc0de',
-          muted: '#6b7280',
-          border: '#2d3748',
-          hover: '#252d3d',
+          bg:      palette.neutral[900],
+          surface: palette.neutral[850],
+          text:    palette.text.darkPrimary,
+          primary: palette.accent.dark,
+          accent:  palette.accent.dark,
+          muted:   palette.text.darkMuted,
+          border:  palette.neutral[800],
+          hover:   palette.neutral[800],
         },
       },
+
+      borderRadius: radius,
+
+      boxShadow: shadows,
+
+      fontFamily: {
+        sans:    fontFamily.sans.split(', '),
+        display: fontFamily.display.split(', '),
+        mono:    fontFamily.mono.split(', '),
+      },
+
+      fontSize,
+
       typography: {
         DEFAULT: {
           css: {
             maxWidth: 'none',
             color: 'inherit',
-            a: { color: '#4cacc7' },
+            a: { color: palette.accent.DEFAULT },
             'code::before': { content: 'none' },
             'code::after': { content: 'none' },
             code: {
-              backgroundColor: '#d4e0f3',
-              borderRadius: '0.25rem',
+              backgroundColor: palette.neutral[100],
+              borderRadius: radius.xs,
               padding: '0.125rem 0.375rem',
               fontWeight: '400',
             },

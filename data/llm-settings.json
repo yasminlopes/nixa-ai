@@ -1,8 +1,5 @@
 {
-  "defaultProvider": "gemini",
-  "encryptedKeys": {
-    "gemini": "RLAijjpQi4qyk8p0.QGIgI2+Ogrmq6IcZzlC0Bw==.ffQWmVpaPc5v5a9y0JoKCJImetuY1Mer2D8E4GWvDOzC1fARWr9S",
-    "openai": "MvQv35WeFGrbsi7q.1LMgcC9EfF7JsoY6f9nnvg==.3Un2kDQ="
-  },
-  "updatedAt": "2026-04-01T20:40:02.170Z"
+  "defaultProvider": "ollama",
+  "encryptedKeys": {},
+  "updatedAt": "2026-05-23T00:32:14.045Z"
 }

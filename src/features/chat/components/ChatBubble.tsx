@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState } from 'react'
+import React from 'react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import { ExternalLink, ChevronDown, Link2, Check, Copy } from 'lucide-react'
@@ -19,8 +19,7 @@ interface ChatBubbleProps {
   variant?: 'user' | 'assistant'
 }
 
-// Helper para renderizar code blocks
-function renderCodeBlock(language: string, code: string, isDark: boolean) {
+function renderCodeBlock(language: string, code: string) {
   const [copied, setCopied] = React.useState(false)
   const SyntaxHighlighterComponent = SyntaxHighlighter as unknown as React.ComponentType<any>
 
@@ -31,22 +30,24 @@ function renderCodeBlock(language: string, code: string, isDark: boolean) {
   }
 
   return (
-    <div className={cn('relative rounded-lg overflow-hidden border my-2 text-xs w-full max-w-full min-w-0', isDark ? 'border-gray-700' : 'border-gray-300')}>
-      <div className={cn('flex items-center justify-between gap-2 px-3 py-2 min-w-0', isDark ? 'bg-[#282c34]' : 'bg-[#eeeeee]')}>
-        <span className={cn('text-[11px] font-mono font-semibold', isDark ? 'text-gray-400' : 'text-gray-600')}>
+    <div
+      className="relative rounded-2xl overflow-hidden my-3 text-xs w-full"
+      style={{ border: '1px solid var(--color-border)' }}
+    >
+      <div
+        className="flex items-center justify-between px-3 py-2"
+        style={{ background: 'var(--color-surface-2)' }}
+      >
+        <span className="text-[11px] font-mono font-medium" style={{ color: 'var(--color-text-soft)' }}>
           {language}
         </span>
         <button
           onClick={handleCopy}
-          className={cn(
-            'flex items-center gap-1 transition-colors text-[11px] shrink-0 font-medium',
-            isDark
-              ? 'text-gray-500 hover:text-gray-200'
-              : 'text-gray-600 hover:text-gray-900'
-          )}
+          className="flex items-center gap-1 text-[11px] font-medium transition-colors"
+          style={{ color: copied ? 'var(--color-accent)' : 'var(--color-text-muted)' }}
         >
           {copied ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
-          <span>{copied ? 'Copiado!' : 'Copiar'}</span>
+          {copied ? 'Copiado' : 'Copiar'}
         </button>
       </div>
       <SyntaxHighlighterComponent
@@ -55,15 +56,11 @@ function renderCodeBlock(language: string, code: string, isDark: boolean) {
         PreTag="div"
         wrapLongLines
         customStyle={{
-          margin: 0,
-          borderRadius: 0,
-          fontSize: '0.8rem',
-          maxWidth: '100%',
-          overflowX: 'auto',
-          whiteSpace: 'pre-wrap',
-          wordBreak: 'break-word',
-          background: isDark ? '#1e1e1e' : '#f5f5f5',
-          color: isDark ? '#d4d4d4' : '#333333',
+          margin: 0, borderRadius: 0, fontSize: '0.8rem',
+          maxWidth: '100%', overflowX: 'auto',
+          whiteSpace: 'pre-wrap', wordBreak: 'break-word',
+          background: '#0F1014', color: '#F4F5F8',
+          fontFamily: 'var(--font-mono), "JetBrains Mono", monospace',
         }}
       >
         {code}
@@ -72,140 +69,136 @@ function renderCodeBlock(language: string, code: string, isDark: boolean) {
   )
 }
 
-export function ChatBubble({
-  content,
-  sources,
-  isUser = false,
-  isStreaming = false,
-  variant = isUser ? 'user' : 'assistant',
-}: ChatBubbleProps) {
-  const isAssistant = variant === 'assistant'
-  const unique = sources ? sources.filter((s, i, arr) => arr.findIndex(x => x.url === s.url) === i) : []
+function CopyButton({ text, onDark = false }: { text: string; onDark?: boolean }) {
   const { copied, copy } = useCopy()
 
-  const handleCopy = async () => {
-    // Remove markdown formatting para dar texto limpo
-    const cleanText = content
-      .replace(/\*\*/g, '') // Remove negrito
-      .replace(/\*/g, '') // Remove itálico
-      .replace(/`/g, '') // Remove inline code
-      .replace(/\[(.+?)\]\(.+?\)/g, '$1') // Remove links mas mantém texto
-      .trim()
-    
-    await copy(cleanText)
+  async function handleCopy() {
+    const clean = text
+      .replace(/\*\*/g, '').replace(/\*/g, '').replace(/`/g, '')
+      .replace(/\[(.+?)\]\(.+?\)/g, '$1').trim()
+    await copy(clean)
   }
 
   return (
-    <div
-      className={cn(
-        'rounded-3xl px-4 py-3 text-sm leading-relaxed min-w-0 w-full',
-        variant === 'user'
-          ? 'bg-gradient-to-br from-[#4f7a96] to-[#425f83] text-white rounded-tr-lg shadow-md'
-          : 'bg-gradient-to-br from-white to-[#fafbfc] dark:from-[#1a1f2e] dark:to-[#1a1f2e] border border-[#e0e8f0] dark:border-[#2d3748] text-[#17223d] dark:text-[#e4e6eb] rounded-tl-lg shadow-sm'
-      )}
+    <button
+      onClick={handleCopy}
+      className="flex items-center gap-1 text-[11px] font-medium transition-colors"
+      style={{
+        color: copied
+          ? (onDark ? 'rgba(255,255,255,0.8)' : 'var(--color-accent)')
+          : (onDark ? 'rgba(255,255,255,0.45)' : 'var(--color-text-muted)'),
+      }}
+      title={copied ? 'Copiado' : 'Copiar'}
     >
-      {/* Header com botão de copiar (apenas para IA) */}
-      {isAssistant && content && (
-        <div className="flex justify-end mb-2 -mx-1 -mt-1">
-          <button
-            onClick={handleCopy}
-            className={cn(
-              'flex items-center gap-1.5 px-2 py-1 rounded-lg text-[11px] font-medium',
-              'transition-all duration-200 group',
-              copied
-                ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400'
-                : 'text-gray-400 dark:text-[#6b7280] hover:text-gray-600 dark:hover:text-[#9ac5ef] hover:bg-gray-100 dark:hover:bg-[#252d3d]'
-            )}
-            title={copied ? 'Copiado!' : 'Copiar resposta'}
-          >
-            {copied ? (
-              <>
-                <Check className="w-3 h-3" />
-                <span>Copiado</span>
-              </>
-            ) : (
-              <>
-                <Copy className="w-3 h-3 opacity-60 group-hover:opacity-100" />
-                <span className="opacity-0 group-hover:opacity-100 transition-opacity">Copiar</span>
-              </>
-            )}
-          </button>
-        </div>
-      )}
+      {copied ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
+      {copied ? 'Copiado' : 'Copiar'}
+    </button>
+  )
+}
 
-      {/* Main Content */}
-      <div className={cn('min-w-0 w-full', isStreaming && !content && 'streaming-cursor')}>
-        {content ? (
-          <div className={cn('min-w-0 w-full', isStreaming && 'streaming-cursor')}>
+export function ChatBubble({
+  content,
+  sources,
+  isStreaming = false,
+  variant = 'assistant',
+}: ChatBubbleProps) {
+  const isAssistant = variant === 'assistant'
+  const unique = sources ? sources.filter((s, i, arr) => arr.findIndex(x => x.url === s.url) === i) : []
+  const isInterrupted = content === '__interrupted__'
+
+  if (isAssistant) {
+    return (
+      <div
+        className="rounded-3xl rounded-tl-lg px-5 py-4 w-full min-w-0"
+        style={{
+          background: 'var(--color-surface)',
+          border: '1px solid var(--color-border)',
+        }}
+      >
+        <div className={cn('min-w-0 w-full prose-message', isStreaming && content && 'streaming-cursor')}>
+          {isInterrupted ? (
+            <p className="text-[13.5px] italic" style={{ color: 'var(--color-text-muted)' }}>
+              Geração interrompida.
+            </p>
+          ) : content ? (
             <ReactMarkdown
               remarkPlugins={[remarkGfm]}
               components={{
-                p: ({ children }) => <p className="mb-2 last:mb-0">{children}</p>,
-                ul: ({ children }) => <ul className="list-disc list-inside space-y-1 my-2">{children}</ul>,
-                ol: ({ children }) => <ol className="list-decimal list-inside space-y-1 my-2">{children}</ol>,
-                li: ({ children }) => <li className="text-inherit">{children}</li>,
                 code({ className, children, ...props }) {
                   const match = /language-(\w+)/.exec(className || '')
                   const code = String(children).replace(/\n$/, '')
-                  return match ? (
-                    renderCodeBlock(match[1], code, isAssistant)
-                  ) : (
-                    <code
-                      className={cn(
-                        'px-1.5 py-0.5 rounded text-xs font-mono',
-                        variant === 'user'
-                          ? 'bg-black/20 text-white'
-                          : 'bg-[#e0e8f0] text-[#17223d]'
-                      )}
-                      {...props}
-                    >
-                      {children}
-                    </code>
+                  return match ? renderCodeBlock(match[1], code) : (
+                    <code className={className} {...props}>{children}</code>
                   )
                 },
                 a: ({ children, href }) => (
-                  <a
-                    href={href}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className={cn(
-                      'underline transition-colors',
-                      variant === 'user'
-                        ? 'text-white hover:text-gray-200'
-                        : 'text-[#4f7a96] hover:text-[#425f83]'
-                    )}
-                  >
-                    {children}
-                  </a>
+                  <a href={href} target="_blank" rel="noopener noreferrer">{children}</a>
                 ),
               }}
             >
               {content}
             </ReactMarkdown>
-          </div>
-        ) : (
-          <div className="flex items-center gap-2">
+          ) : (
             <TypingIndicator />
-            <span className={cn(isAssistant ? 'text-gray-400 text-sm' : 'text-white')} >Pensando...</span>
+          )}
+        </div>
+
+        {!isStreaming && content && !isInterrupted && (
+          <div
+            className="mt-4 pt-3 flex items-center justify-between gap-3"
+            style={{ borderTop: '1px solid var(--color-border)' }}
+          >
+            {unique.length > 0 ? <SourcesInline sources={unique} /> : <span />}
+            <CopyButton text={content} />
           </div>
         )}
       </div>
+    )
+  }
 
-      {/* Sources Footer (integrated in bubble) */}
-      {isAssistant && unique.length > 0 && (
-        <SourcesFooter sources={unique} />
-      )}
+  // USER — pill arredondada azul accent
+  return (
+    <div
+      className="rounded-3xl rounded-tr-lg px-5 py-3 text-[14.5px] leading-relaxed min-w-0 max-w-full"
+      style={{
+        background: 'var(--color-ink)',
+        color: 'var(--color-ink-text)',
+      }}
+    >
+      <div className="min-w-0 w-full">
+        {content ? (
+          <ReactMarkdown
+            remarkPlugins={[remarkGfm]}
+            components={{
+              p: ({ children }) => <p className="mb-2 last:mb-0">{children}</p>,
+              code: ({ children }) => (
+                <code
+                  className="px-1.5 py-0.5 rounded text-xs font-mono"
+                  style={{ background: 'rgba(255,255,255,0.14)' }}
+                >
+                  {children}
+                </code>
+              ),
+            }}
+          >
+            {content}
+          </ReactMarkdown>
+        ) : null}
+      </div>
     </div>
   )
 }
 
-function SourcesFooter({ sources }: { sources: Source[] }) {
+function SourcesInline({ sources }: { sources: Source[] }) {
   return (
-    <details className="mt-3 pt-3 border-t border-[#e0e8f0] dark:border-[#2d3748] group">
-      <summary className="list-none cursor-pointer flex items-center gap-1.5 text-[11px] text-[#7a8fa1] dark:text-[#6b7280] hover:text-[#5a7a91] dark:hover:text-[#9ac5ef] transition-colors">
+    <details className="group flex-1 min-w-0">
+      <summary
+        className="list-none cursor-pointer flex items-center gap-1.5 text-[11.5px] font-medium select-none w-fit transition-colors"
+        style={{ color: 'var(--color-text-muted)' }}
+      >
         <Link2 className="w-3 h-3 shrink-0" />
-        <span>Fontes ({sources.length})</span>
-        <ChevronDown className="w-2.5 h-2.5 transition-transform group-open:rotate-180 ml-auto" />
+        <span>{sources.length} {sources.length === 1 ? 'fonte' : 'fontes'}</span>
+        <ChevronDown className="w-2.5 h-2.5 transition-transform group-open:rotate-180" />
       </summary>
       <div className="mt-2 space-y-1.5 flex flex-col">
         {sources.map((src, i) => (
@@ -215,12 +208,15 @@ function SourcesFooter({ sources }: { sources: Source[] }) {
             target="_blank"
             rel="noopener noreferrer"
             title={src.title}
-            className="flex items-center gap-1.5 text-[10px] px-2 py-1 rounded-lg
-                       bg-[#f9fafb] dark:bg-[#252d3d] text-[#5a7a91] dark:text-[#9ac5ef] hover:bg-[#f0f4f9] dark:hover:bg-[#2d3748] transition-colors
-                       border border-[#e0e8f0] dark:border-[#2d3748] group/link"
+            className="flex items-center gap-1.5 text-[12px] px-3 py-1.5 rounded-full transition-all group/src hover:translate-x-px"
+            style={{
+              background: 'var(--color-surface-2)',
+              color: 'var(--color-text-soft)',
+              border: '1px solid var(--color-border)',
+            }}
           >
-            <ExternalLink className="w-2.5 h-2.5 shrink-0 text-[#9db0bf] group-hover/link:text-[#4f7a96]" />
-            <span className="truncate">{src.title.length > 50 ? src.title.slice(0, 50) + '…' : src.title}</span>
+            <ExternalLink className="w-2.5 h-2.5 shrink-0 opacity-50 group-hover/src:opacity-100" />
+            <span className="truncate">{src.title.length > 60 ? src.title.slice(0, 60) + '…' : src.title}</span>
           </a>
         ))}
       </div>

@@ -1,9 +1,9 @@
 import { NextRequest } from 'next/server'
 import { searchSimilarDocs } from '@/core/vectorstore'
-import { buildSystemPrompt, formatConversationHistory } from '@/core/rag'
+import { buildSystemPrompt } from '@/core/rag'
 import { Message } from '@/shared/types'
 import { getDefaultProvider, getProviderApiKey } from '@/core/settings'
-import { runOpenAIChat, runAnthropicChat, runGroqChat, runGeminiChat, runHuggingFaceChat, extractRetryDelaySeconds } from '@/core/llm'
+import { runOpenAIChat, runAnthropicChat, runGroqChat, runGeminiChat, runHuggingFaceChat, runOllamaChat, extractRetryDelaySeconds } from '@/core/llm'
 
 export const runtime = 'nodejs'
 
@@ -98,6 +98,62 @@ async function fetchLatestAgentSdkVersion(): Promise<{ version: string; publishe
   }
 }
 
+// ─── Dicionário PT → EN técnico (NICE/CXone) ──────────────────────────────────
+// Adiciona termos em inglês quando a query é em PT, melhorando recall em docs EN.
+const PT_EN_TERMS: Array<{ patterns: RegExp; en: string }> = [
+  // Copilot & sentiment
+  { patterns: /(sentimento|sentimentos|humor)/i,                            en: 'sentiment positive negative neutral feeling emotion analysis' },
+  { patterns: /\bcopilot\b/i,                                               en: 'copilot agent assist ai assistant CXone Copilot' },
+
+  // Auth
+  { patterns: /(autentica[çc][ãa]o|login|token|oauth)/i,                    en: 'authentication oauth token bearer access refresh login credentials' },
+
+  // Reporting
+  { patterns: /(relat[óo]rio|dashboard|m[ée]tricas|insight)/i,              en: 'reporting analytics reports dashboard insights metrics KPI' },
+
+  // Release
+  { patterns: /(release|vers[aã]o|versao|novidade)/i,                       en: 'release notes whats new changelog latest version update' },
+
+  // Channels & contact
+  { patterns: /(canal|canais|atendimento)/i,                                en: 'channel channels omnichannel contact center voice digital' },
+  { patterns: /(chamada|chamadas|voz|telefone)/i,                           en: 'call calls voice interaction phone telephony inbound outbound' },
+
+  // ACD / queue
+  { patterns: /(fila|filas|roteamento|skill|skillset)/i,                    en: 'queue queues skill skillset ACD routing distribution' },
+
+  // Agent
+  { patterns: /(agente|agentes)/i,                                          en: 'agent agents user contact center agent' },
+  { patterns: /(supervisor)/i,                                              en: 'supervisor manager team leader' },
+
+  // Recording / transcription
+  { patterns: /(grava[çc][ãa]o|gravar)/i,                                   en: 'recording call recording voice recording playback' },
+  { patterns: /(transcri[çc][ãa]o|transcript)/i,                            en: 'transcription transcript speech-to-text STT' },
+
+  // Studio / scripts
+  { patterns: /(studio|script|fluxo)/i,                                     en: 'studio script flow IVR designer scripting' },
+
+  // WFM / QM
+  { patterns: /(wfm|workforce|escala|planejamento)/i,                       en: 'workforce management WFM scheduling forecasting adherence' },
+  { patterns: /(quality|qm|monitoria|avalia)/i,                             en: 'quality management QM evaluation monitoring scoring' },
+
+  // Events / webhooks
+  { patterns: /(webhook|evento|eventos|event hub)/i,                        en: 'event hub webhook events streaming push notification' },
+
+  // SDK / API
+  { patterns: /(endpoint|api|rest)/i,                                       en: 'API endpoint REST request response HTTP' },
+
+  // CRM / cases
+  { patterns: /(ticket|caso|chamado)/i,                                     en: 'case ticket incident issue support' },
+]
+
+function expandQueryPtEn(query: string): string[] {
+  const matched: string[] = []
+  for (const { patterns, en } of PT_EN_TERMS) {
+    if (patterns.test(query)) matched.push(en)
+  }
+  return matched
+}
+
 function buildRetrievalQuery(userMessage: string): string {
   const normalized = userMessage.toLowerCase()
   const mentionsSdk = /\bsdk\b/.test(normalized)
@@ -106,28 +162,20 @@ function buildRetrievalQuery(userMessage: string): string {
     normalized.includes('agent-sdk') ||
     normalized.includes('agent sdk')
 
-  if (mentionsSdk && !mentionsAgentSdk) {
-    return `${userMessage}\n\nContexto preferencial de busca: @nice-devone/agent-sdk NICE CXone Agent SDK npm github nice-devone`
-  }
-
   const expansions: string[] = []
 
-  if (/(autentica|auth|login|token|oauth)/.test(normalized)) {
-    expansions.push('authentication auth oauth token bearer login access token refresh token')
+  if (mentionsSdk && !mentionsAgentSdk) {
+    expansions.push('@nice-devone/agent-sdk NICE CXone Agent SDK npm github nice-devone')
   }
-  if (/(report|relat|dashboard|insight)/.test(normalized)) {
-    expansions.push('reporting analytics reports dashboard insights metrics')
-  }
-  if (/(release|vers[aã]o|versao|what.?s new|novidade)/.test(normalized)) {
-    expansions.push('release notes whats new changelog latest version')
-  }
-  if (/(websocket|event hub|eventhub|evento)/.test(normalized)) {
-    expansions.push('event hub websocket events streaming connection')
-  }
+
+  // Expansão PT→EN técnica
+  expansions.push(...expandQueryPtEn(userMessage))
 
   if (expansions.length === 0) return userMessage
 
-  return `${userMessage}\n\nTermos relacionados: ${expansions.join(' ; ')}`
+  // Dedupe + concat
+  const unique = Array.from(new Set(expansions))
+  return `${userMessage}\n\nTermos relacionados (EN): ${unique.join(' ; ')}`
 }
 
 function isLikelyDomainQuestion(text: string): boolean {
@@ -215,11 +263,13 @@ export async function POST(req: NextRequest) {
   const hasDomainSignal = isLikelyDomainQuestion(userMessage)
   const hasRelevantDocs = relevantDocs.length > 0
 
+  // Off-topic gate: sem sinal de domínio E sem chunks relevantes → reject sem LLM.
+  // (relevantDocs já vem [] quando nada bate o threshold de relevância no vectorstore)
   if (strictDomainMode && !hasDomainSignal && !hasRelevantDocs) {
-    console.log('[CHAT] 🚫 Question out of domain scope (no docs found)')
+    console.log('[CHAT] 🚫 Pergunta fora do escopo (sem sinal de domínio + sem chunks)')
     return Response.json({
       message:
-        'Essa pergunta parece fora do contexto de NICE/CXone. Posso te ajudar com APIs, filas, ACD, Studio, autenticação e configuração da plataforma.',
+        'Não localizei essa informação na documentação técnica da NICE CXone. Posso te ajudar com APIs, filas, ACD, Studio, autenticação e configuração da plataforma.',
       sources: [],
     })
   }
@@ -238,7 +288,12 @@ export async function POST(req: NextRequest) {
     providerApiKey = process.env.GEMINI_API_KEY ?? null
   }
 
-  if (!providerApiKey) {
+  // Ollama é local e não precisa de chave
+  if (provider === 'ollama') {
+    providerApiKey = providerApiKey ?? ''
+  }
+
+  if (!providerApiKey && provider !== 'ollama') {
     console.error(`[CHAT] ❌ Missing API key for provider: ${provider}`)
     return Response.json(
       {
@@ -249,12 +304,14 @@ export async function POST(req: NextRequest) {
     )
   }
 
+  const apiKey: string = providerApiKey ?? ''
+
   const sources = uniqueSources(relevantDocs.map(d => ({
     title: d.metadata.title,
     url: d.metadata.url,
   })))
 
-  if (provider === 'openai' || provider === 'anthropic' || provider === 'groq' || provider === 'huggingface') {
+  if (provider === 'openai' || provider === 'anthropic' || provider === 'groq' || provider === 'huggingface' || provider === 'ollama') {
     console.log(`[CHAT] 🤖 Starting ${provider.toUpperCase()} streaming`)
     try {
       const stream = new ReadableStream({
@@ -264,27 +321,34 @@ export async function POST(req: NextRequest) {
           const chatGenerator =
             provider === 'openai'
               ? runOpenAIChat({
-                  apiKey: providerApiKey,
+                  apiKey,
                   systemPrompt,
                   history,
                   userMessage,
                 })
               : provider === 'anthropic'
               ? runAnthropicChat({
-                  apiKey: providerApiKey,
+                  apiKey,
                   systemPrompt,
                   history,
                   userMessage,
                 })
               : provider === 'groq'
               ? runGroqChat({
-                  apiKey: providerApiKey,
+                  apiKey,
+                  systemPrompt,
+                  history,
+                  userMessage,
+                })
+              : provider === 'ollama'
+              ? runOllamaChat({
+                  apiKey,
                   systemPrompt,
                   history,
                   userMessage,
                 })
               : runHuggingFaceChat({
-                  apiKey: providerApiKey,
+                  apiKey,
                   systemPrompt,
                   history,
                   userMessage,
@@ -335,7 +399,7 @@ export async function POST(req: NextRequest) {
   let geminiResult: Awaited<ReturnType<typeof runGeminiChat>>
   try {
     geminiResult = await runGeminiChat({
-      apiKey: providerApiKey,
+      apiKey,
       systemPrompt,
       history,
       userMessage,

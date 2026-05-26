@@ -5,7 +5,7 @@ import { Sidebar } from '@/features/sidebar/containers/Sidebar'
 import { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Conversation } from '@/shared/types'
-import { PanelLeft, Zap, KeyRound, ShieldCheck, ArrowRight } from 'lucide-react'
+import { PanelLeft, KeyRound, ShieldCheck, ArrowRight, Sparkles } from 'lucide-react'
 import { cn } from '@/shared/utils/cn'
 
 type GateState = 'loading' | 'key' | 'index' | 'done'
@@ -13,6 +13,7 @@ type GateState = 'loading' | 'key' | 'index' | 'done'
 export default function Home() {
   const [activeConversationId, setActiveConversationId] = useState<string | null>(null)
   const [refreshTrigger, setRefreshTrigger] = useState(0)
+  const [chatKey, setChatKey] = useState(0)
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false)
   const [checkedOnboarding, setCheckedOnboarding] = useState(false)
@@ -59,13 +60,16 @@ export default function Home() {
     window.dispatchEvent(new CustomEvent('nixa-open-workspace', { detail: { tab } }))
   }
 
-  function handleNewConversation() { setActiveConversationId(null) }
+  function handleNewConversation() {
+    setActiveConversationId(null)
+    setChatKey(k => k + 1)
+  }
   function handleConversationSaved(conv: Conversation) {
     setActiveConversationId(conv.id)
     setRefreshTrigger(t => t + 1)
   }
 
-  if (!checkedOnboarding) return <div className="h-full w-full bg-[#fdfefe]" />
+  if (!checkedOnboarding) return <div className="h-full w-full" style={{ background: 'var(--color-bg)' }} />
 
   const showGate = gateState === 'key' || gateState === 'index'
 
@@ -95,121 +99,154 @@ export default function Home() {
       </div>
 
       <main className="flex-1 flex flex-col min-w-0">
-        <div className="md:hidden h-12 border-b border-[#d4e0f3] dark:border-[#2d3748] bg-[#fdfefe] dark:bg-[#0f1419] px-3 flex items-center">
+        <div
+          className="md:hidden h-12 px-4 flex items-center"
+          style={{
+            borderBottom: '1px solid var(--color-border)',
+            background: 'var(--color-bg)',
+          }}
+        >
           <button
             onClick={() => setMobileSidebarOpen(true)}
-            className="w-8 h-8 rounded-md flex items-center justify-center text-[#425f83] dark:text-[#9ac5ef] hover:bg-[#d4e0f3] dark:hover:bg-[#1a1f2e] transition-colors"
+            className="w-8 h-8 rounded-md flex items-center justify-center transition-colors"
+            style={{ color: 'var(--color-text-soft)' }}
             title="Abrir menu"
           >
             <PanelLeft className="w-4 h-4" />
           </button>
-          <span className="ml-2 text-sm font-medium text-[#17223d] dark:text-[#e4e6eb]">Nixa AI</span>
+          <span className="ml-2 font-display font-semibold text-[18px]" style={{ color: 'var(--color-text)' }}>
+            Nixa
+          </span>
         </div>
         <ChatInterface
-          key={activeConversationId ?? 'new'}
+          key={`${activeConversationId ?? 'new'}-${chatKey}`}
           conversationId={activeConversationId}
           onConversationSaved={handleConversationSaved}
         />
       </main>
 
-      {/* Setup gate — blurs chat until key + indexing are ready */}
+      {/* Setup gate */}
       {showGate && (
-        <div className="absolute inset-0 z-20 flex items-center justify-center backdrop-blur-md bg-[#080f1e]/60">
-          <div className="w-full max-w-md mx-4 space-y-3">
+        <div
+          className="absolute inset-0 z-20 flex items-center justify-center backdrop-blur-md"
+          style={{ background: 'rgba(15, 14, 12, 0.45)' }}
+        >
+          <div className="w-full max-w-md mx-4 space-y-5">
 
-            {/* ── Step indicator ── */}
-            <div className="flex items-center gap-2 px-1 mb-1">
-              {/* Step 1 */}
-              <div className={`flex items-center gap-1.5 text-xs font-medium ${gateState === 'key' ? 'text-[#4cacc7]' : 'text-emerald-400'}`}>
-                <div className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold border ${gateState === 'key' ? 'border-[#4cacc7] text-[#4cacc7]' : 'border-emerald-400 bg-emerald-400/20 text-emerald-400'}`}>
-                  {gateState === 'key' ? '1' : '✓'}
-                </div>
-                Chave de API
-              </div>
-              <div className="flex-1 h-px bg-white/10" />
-              {/* Step 2 */}
-              <div className={`flex items-center gap-1.5 text-xs font-medium ${gateState === 'index' ? 'text-[#4cacc7]' : 'text-white/30'}`}>
-                <div className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold border ${gateState === 'index' ? 'border-[#4cacc7] text-[#4cacc7]' : 'border-white/20 text-white/30'}`}>
-                  2
-                </div>
-                Indexar docs
-              </div>
+            {/* Step indicator — editorial */}
+            <div className="flex items-center justify-center gap-3 text-[11px] tracking-[0.15em] uppercase font-mono"
+                 style={{ color: '#F5F2EA' }}>
+              <span style={{ opacity: gateState === 'key' ? 1 : 0.5 }}>
+                {gateState === 'key' ? '01' : '✓'} Chave
+              </span>
+              <span style={{ opacity: 0.3 }}>·</span>
+              <span style={{ opacity: gateState === 'index' ? 1 : 0.4 }}>
+                02 Indexar
+              </span>
             </div>
 
-            {/* ── Key gate ── */}
+            {/* Gate card */}
             {gateState === 'key' && (
               <button
                 onClick={() => openModal('settings')}
-                className="group w-full text-left rounded-2xl border border-white/12 bg-[#0d1e33]/95 shadow-2xl overflow-hidden hover:border-[#4cacc7]/40 transition-all duration-200"
+                className="group w-full text-left rounded-[22px] overflow-hidden transition-all duration-200 hover:scale-[1.01]"
+                style={{
+                  background: 'var(--color-surface)',
+                  border: '1px solid var(--color-border)',
+                  boxShadow: '0 24px 60px -12px rgba(15,14,12,0.5)',
+                }}
               >
-                <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[#4cacc7]/50 to-transparent" />
                 <div className="p-6">
-                  <div className="flex items-start gap-4">
-                    <div className="w-12 h-12 rounded-xl overflow-hidden border border-white/10 shrink-0">
-                      <video src="/assets/nixa-video.mp4" autoPlay muted loop playsInline className="w-full h-full object-cover" />
-                    </div>
-                    <div className="flex-1">
-                      <p className="text-base font-semibold text-white mb-1">Adicione sua chave de API</p>
-                      <p className="text-sm text-[#8ba8c0] leading-relaxed">
-                        Para gerar embeddings e responder às perguntas, preciso de uma chave de API — Gemini (gratuita) ou OpenAI.
-                      </p>
-                    </div>
+                  <div className="mb-5">
+                    <p
+                      className="text-[10.5px] tracking-[0.18em] uppercase font-mono mb-2"
+                      style={{ color: 'var(--color-accent)' }}
+                    >
+                      Primeiro passo
+                    </p>
+                    <h2 className="font-display font-semibold text-[28px] leading-tight tracking-tight" style={{ color: 'var(--color-text)' }}>
+                      Adicione sua chave.
+                    </h2>
+                    <p className="text-[14px] mt-2 leading-relaxed" style={{ color: 'var(--color-text-soft)' }}>
+                      Gemini (gratuita), OpenAI ou Ollama (local, sem custo) para gerar embeddings e respostas.
+                    </p>
                   </div>
 
-                  {/* Security note */}
-                  <div className="mt-4 flex items-start gap-2.5 rounded-xl bg-white/4 border border-white/8 px-3.5 py-3">
-                    <ShieldCheck className="w-4 h-4 text-[#4cacc7] shrink-0 mt-0.5" />
-                    <p className="text-xs text-[#8ba8c0] leading-relaxed">
-                      Sua chave é criptografada com <span className="text-white/70 font-medium">AES-256-GCM</span> antes de ser salva no servidor. Nunca é exposta nas respostas da API.
+                  <div
+                    className="flex items-start gap-2 rounded-[14px] px-3.5 py-3"
+                    style={{ background: 'var(--color-surface-2)', border: '1px solid var(--color-border)' }}
+                  >
+                    <ShieldCheck className="w-3.5 h-3.5 shrink-0 mt-0.5" style={{ color: 'var(--color-accent)' }} />
+                    <p className="text-[12px] leading-relaxed" style={{ color: 'var(--color-text-soft)' }}>
+                      Criptografada com{' '}
+                      <span style={{ color: 'var(--color-text)' }} className="font-medium">AES-256-GCM</span>.
+                      Nunca exposta nas respostas.
                     </p>
                   </div>
 
                   <div className="mt-5 flex items-center justify-between">
-                    <div className="flex items-center gap-1.5 text-xs text-[#4a6a88]">
-                      <KeyRound className="w-3.5 h-3.5" />
-                      Gemini · Google AI Studio — gratuito
+                    <div className="flex items-center gap-1.5 text-[11px] font-mono" style={{ color: 'var(--color-text-muted)' }}>
+                      <KeyRound className="w-3 h-3" />
+                      Gemini é gratuito
                     </div>
-                    <div className="flex items-center gap-1.5 rounded-lg bg-[#4f7a96] group-hover:bg-[#4cacc7] text-white px-3.5 py-2 text-xs font-medium transition-colors">
-                      Adicionar chave
-                      <ArrowRight className="w-3.5 h-3.5" />
+                    <div
+                      className="flex items-center gap-1.5 rounded-full px-4 py-1.5 text-[12px] font-medium transition-opacity group-hover:opacity-90"
+                      style={{ background: 'var(--color-accent)', color: '#FFFFFF' }}
+                    >
+                      Configurar
+                      <ArrowRight className="w-3 h-3" />
                     </div>
                   </div>
                 </div>
               </button>
             )}
 
-            {/* ── Index gate ── */}
             {gateState === 'index' && (
               <button
                 onClick={() => openModal('index')}
-                className="group w-full text-left rounded-2xl border border-white/12 bg-[#0d1e33]/95 shadow-2xl overflow-hidden hover:border-[#4cacc7]/40 transition-all duration-200"
+                className="group w-full text-left rounded-[22px] overflow-hidden transition-all duration-200 hover:scale-[1.01]"
+                style={{
+                  background: 'var(--color-surface)',
+                  border: '1px solid var(--color-border)',
+                  boxShadow: '0 24px 60px -12px rgba(15,14,12,0.5)',
+                }}
               >
-                <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[#4cacc7]/50 to-transparent" />
                 <div className="p-6">
-                  <div className="flex items-start gap-4">
-                    <div className="w-12 h-12 rounded-xl overflow-hidden border border-white/10 shrink-0">
-                      <video src="/assets/nixa-video.mp4" autoPlay muted loop playsInline className="w-full h-full object-cover" />
-                    </div>
-                    <div className="flex-1">
-                      <p className="text-base font-semibold text-white mb-1">Indexar documentação</p>
-                      <p className="text-sm text-[#8ba8c0] leading-relaxed">
-                        Chave configurada! Agora vou ler as docs NICE/CXone e montar minha base de conhecimento.
-                      </p>
-                    </div>
+                  <div className="mb-5">
+                    <p
+                      className="text-[10.5px] tracking-[0.18em] uppercase font-mono mb-2"
+                      style={{ color: 'var(--color-accent)' }}
+                    >
+                      Quase lá
+                    </p>
+                    <h2 className="font-display font-semibold text-[28px] leading-tight tracking-tight" style={{ color: 'var(--color-text)' }}>
+                      Indexe a documentação.
+                    </h2>
+                    <p className="text-[14px] mt-2 leading-relaxed" style={{ color: 'var(--color-text-soft)' }}>
+                      Chave configurada. Agora a Nixa precisa absorver as docs NICE/CXone para começar a responder.
+                    </p>
                   </div>
 
-                  <div className="mt-4 flex items-start gap-2.5 rounded-xl bg-white/4 border border-white/8 px-3.5 py-3">
-                    <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
-                    <p className="text-xs text-[#8ba8c0] leading-relaxed">
-                      URLs já indexadas são puladas automaticamente — sem reprocessar o que já existe.
+                  <div
+                    className="flex items-start gap-2 rounded-[14px] px-3.5 py-3"
+                    style={{ background: 'var(--color-surface-2)', border: '1px solid var(--color-border)' }}
+                  >
+                    <ShieldCheck className="w-3.5 h-3.5 shrink-0 mt-0.5" style={{ color: 'var(--color-accent)' }} />
+                    <p className="text-[12px] leading-relaxed" style={{ color: 'var(--color-text-soft)' }}>
+                      URLs já indexadas são puladas — sem reprocessar o que já existe.
                     </p>
                   </div>
 
                   <div className="mt-5 flex items-center justify-between">
-                    <span className="text-xs text-[#4a6a88]">Pode levar alguns minutos</span>
-                    <div className="flex items-center gap-1.5 rounded-lg bg-[#4f7a96] group-hover:bg-[#4cacc7] text-white px-3.5 py-2 text-xs font-medium transition-colors">
-                      <Zap className="w-3.5 h-3.5" />
-                      Indexar agora
+                    <span className="text-[11px] font-mono" style={{ color: 'var(--color-text-muted)' }}>
+                      pode levar alguns minutos
+                    </span>
+                    <div
+                      className="flex items-center gap-1.5 rounded-full px-4 py-1.5 text-[12px] font-medium transition-opacity group-hover:opacity-90"
+                      style={{ background: 'var(--color-accent)', color: '#FFFFFF' }}
+                    >
+                      <Sparkles className="w-3 h-3" />
+                      Indexar
                     </div>
                   </div>
                 </div>

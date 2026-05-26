@@ -5,7 +5,7 @@ import {
   saveLLMSettings,
 } from '@/core/settings'
 
-const ALLOWED: LLMProvider[] = ['gemini', 'openai', 'anthropic', 'groq', 'huggingface']
+const ALLOWED: LLMProvider[] = ['gemini', 'openai', 'anthropic', 'groq', 'huggingface', 'ollama']
 
 export async function GET() {
   try {

@@ -2,7 +2,7 @@
  * LLM Provider configurations
  */
 
-export type Provider = 'gemini' | 'openai'
+export type Provider = 'gemini' | 'openai' | 'ollama'
 
 export interface ProviderConfig {
   label: string
@@ -20,6 +20,11 @@ export const PROVIDERS: Record<Provider, ProviderConfig> = {
     label: 'OpenAI',
     hint: 'GPT para tasks gerais',
     color: '#10A37F',
+  },
+  ollama: {
+    label: 'Ollama (local)',
+    hint: 'Roda 100% local, sem custos',
+    color: '#FF6B35',
   },
 }
 

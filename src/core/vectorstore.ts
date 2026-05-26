@@ -1,4 +1,3 @@
-import * as lancedb from '@lancedb/lancedb'
 import { DocChunk } from '@/shared/types'
 import { getEmbeddingForProvider, type EmbeddingProvider } from '@/core/embeddings'
 import { getProviderApiKey } from '@/core/settings'
@@ -7,27 +6,30 @@ import path from 'path'
 
 // ─── Config ─────────────────────────────────────────────────────────────────
 
-const TABLE_NAME = 'docs'
-
-// Free tier mode - set FREE_TIER=true to use local JSON storage instead of LanceDB
-const IS_FREE_TIER = process.env.FREE_TIER === 'true'
 const LOCAL_STORE_PATH = path.join(process.cwd(), 'data', 'vectorstore.json')
 
-type LanceConnection = Awaited<ReturnType<typeof lancedb.connect>>
-type LanceTable = Awaited<ReturnType<LanceConnection['openTable']>>
+/** Limite máximo do texto enviado ao provider de embedding (antes do truncamento por modelo). */
+const MAX_EMBED_INPUT_CHARS = 2000
+
+/** Tamanho máximo do cache de embeddings em memória (LRU simples). */
+const EMBED_CACHE_LIMIT = 64
+
+/**
+ * Threshold mínimo de relevância no score híbrido (semântico + léxico).
+ * Abaixo disso → tratamos como "sem match" e retornamos [].
+ * Evita injetar chunks de baixa similaridade que causam alucinação off-topic.
+ */
+const MIN_HYBRID_RELEVANCE = 0.22
+
+/** Threshold quando o embedding falha e caímos no fallback puramente léxico. */
+const MIN_LEXICAL_RELEVANCE = 0.10
 
 // ─── State ───────────────────────────────────────────────────────────────────
 
-let warnedFallback = false
 let embeddingsUnavailable = false
-let _db: LanceConnection | null = null
-let _table: LanceTable | null = null
-
-// Simple embedding cache — avoids re-embedding identical queries within the same process
 const embeddingCache = new Map<string, number[]>()
-const EMBEDDING_CACHE_MAX = 64
 
-// ─── Local JSON Storage (FREE_TIER mode) ──────────────────────────────────────
+// ─── Local JSON Storage ──────────────────────────────────────────────────────
 
 interface LocalStore {
   chunks: DocChunk[]
@@ -69,86 +71,6 @@ function cosineSimilarity(a: number[], b: number[]): number {
     normB += b[i] * b[i]
   }
   return dotProduct / (Math.sqrt(normA) * Math.sqrt(normB))
-}
-
-// ─── LanceDB connection ───────────────────────────────────────────────────────
-
-async function getDb(): Promise<LanceConnection> {
-  if (IS_FREE_TIER) {
-    throw new Error('[VECTORSTORE] Modo FREE_TIER ativo - usando storage local JSON')
-  }
-  
-  if (_db) return _db
-  
-  _db = await lancedb.connect({
-    uri:    process.env.LANCEDB_URI!,
-    apiKey: process.env.LANCEDB_API_KEY!,
-    region: process.env.LANCEDB_REGION ?? 'us-east-1',
-  })
-  return _db
-}
-
-async function getTable(vectorDim?: number): Promise<LanceTable | null> {
-  if (_table) return _table
-  const db = await getDb()
-  const names: string[] = await db.tableNames()
-
-  if (names.includes(TABLE_NAME)) {
-    _table = await db.openTable(TABLE_NAME)
-    return _table
-  }
-
-  if (!vectorDim) return null
-
-  // First write: create table with a sentinel row to establish schema
-  const sentinel: Record<string, unknown> = {
-    id: '__sentinel__', vector: new Array(vectorDim).fill(0) as number[],
-    content: '', source: '', title: '', url: '__sentinel__',
-    breadcrumb: '', page_type: '', crawled_at: '',
-  }
-  _table = await db.createTable(TABLE_NAME, [sentinel])
-  // Remove the sentinel
-  await _table.delete(`url = '__sentinel__'`)
-  return _table
-}
-
-// ─── Row type ────────────────────────────────────────────────────────────────
-
-interface LanceRow extends Record<string, unknown> {
-  id: string
-  vector: number[]
-  content: string
-  source: string
-  title: string
-  url: string
-  breadcrumb: string
-  page_type: string
-  crawled_at: string
-  _distance?: number
-}
-
-function buildRow(
-  id: string,
-  vector: number[],
-  fields: Omit<LanceRow, 'id' | 'vector' | '_distance'>
-): LanceRow {
-  return { id, vector, ...fields } as LanceRow
-}
-
-function rowToChunk(row: LanceRow): DocChunk {
-  return {
-    id:        row.id,
-    content:   row.content,
-    embedding: row.vector,
-    metadata:  {
-      source:    row.source,
-      title:     row.title,
-      url:       row.url,
-      breadcrumb: row.breadcrumb || undefined,
-      pageType:  (row.page_type as DocChunk['metadata']['pageType']) || undefined,
-      crawledAt: row.crawled_at  || undefined,
-    },
-  }
 }
 
 // ─── Domain signals / noise filters ──────────────────────────────────────────
@@ -227,13 +149,12 @@ function isLowQualityChunk(doc: DocChunk): boolean {
   const lowerContent = doc.content.toLowerCase()
   if (lowerUrl.includes('/signup') || lowerUrl.includes('/login') || lowerUrl.includes('/join'))
     return true
-  if (doc.content.length < 120) {
-    const hasStructure = /\d+/.test(doc.content) ||
-      lowerContent.includes('é') || lowerContent.includes('copilot') ||
-      lowerContent.includes('sentimento') || lowerContent.includes('agent') ||
-      lowerContent.includes('export') || lowerContent.includes('function')
-    if (!hasStructure) return true
-  }
+
+  // Chunks muito curtos só são descartados se NÃO tiverem breadcrumb (sem contexto = inútil)
+  // e não tiverem estrutura técnica. Com breadcrumb, mesmo chunks curtos preservam contexto.
+  const hasBreadcrumb = !!(doc.metadata.breadcrumb && doc.metadata.breadcrumb.length > 0)
+  if (doc.content.length < 60 && !hasBreadcrumb) return true
+
   if (
     lowerContent.includes('create your free account') ||
     lowerContent.includes('sign up for github') ||
@@ -296,8 +217,7 @@ function rerankDocs(scored: ScoredDoc[], query: string, k: number): DocChunk[] {
       s += pageTypeBoost(doc.metadata.pageType, technical)
       s += sourceAuthorityBoost(urlLc)
       s += recencyBoost(doc.metadata.crawledAt)
-      
-      // Count tokens in title and head
+
       let titleMatches = 0, headMatches = 0
       for (const t of tokens) {
         if (title.includes(t)) titleMatches++
@@ -339,9 +259,8 @@ export async function getEmbedding(
   onWarning?: (msg: string) => void
 ): Promise<number[]> {
   if (embeddingsUnavailable) throw new Error('EMBEDDINGS_UNAVAILABLE')
-  const safe = text.slice(0, 2000)
+  const safe = text.slice(0, MAX_EMBED_INPUT_CHARS)
 
-  // Return cached embedding if available
   const cached = embeddingCache.get(safe)
   if (cached) {
     console.log('[EMBED] 💾 Cache hit')
@@ -349,9 +268,8 @@ export async function getEmbedding(
   }
 
   try {
-    // Get API key for the provider - each provider uses only its own key
     let apiKey: string | null = null
-    
+
     switch (provider) {
       case 'gemini':
         apiKey = process.env.GEMINI_API_KEY ?? null
@@ -368,63 +286,68 @@ export async function getEmbedding(
       case 'huggingface':
         apiKey = (await getProviderApiKey(provider)) ?? process.env.HUGGINGFACE_API_KEY ?? null
         break
+      case 'ollama':
+        apiKey = ''
+        break
       default:
         throw new Error(`[EMBED] ❌ Provider desconhecido: ${provider}`)
     }
 
-    if (!apiKey) {
-      throw new Error(`[EMBED] ❌ Chave de API não encontrada para ${provider}. Configure a chave no .env.local ou nas configurações.`)
+    if (apiKey === null) {
+      throw new Error(`[EMBED] ❌ Chave de API não encontrada para ${provider}.`)
     }
 
-    console.log(`[EMBED] 🔑 Usando chave de API do provider: ${provider}`)
+    console.log(`[EMBED] 🔑 Provider: ${provider}`)
     const result = await getEmbeddingForProvider(provider, safe, apiKey, onWarning)
-    
-    // Cache the result
+
     embeddingCache.set(safe, result.embedding)
-    if (embeddingCache.size > 64) {
+    if (embeddingCache.size > EMBED_CACHE_LIMIT) {
       const firstKey = embeddingCache.keys().next().value as string
       if (firstKey) embeddingCache.delete(firstKey)
     }
-    
+
     return result.embedding
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err)
-    console.error(`[EMBED] ❌ Failed to get embedding: ${msg}`)
-    embeddingsUnavailable = true
+    console.error(`[EMBED] ❌ Failed: ${msg}`)
+    // Marca como indisponível APENAS para problemas estruturais (chave ausente, auth, serviço fora).
+    // Erros de input específico (contexto, content) são por-chunk, não bloqueiam outras chamadas.
+    const isPermanent = (
+      msg.includes('Chave de API') ||
+      msg.includes('ECONNREFUSED') ||
+      msg.includes('fetch failed') ||
+      msg.includes('UNAUTHORIZED') ||
+      msg.includes('401') ||
+      msg.includes('403')
+    )
+    if (isPermanent) embeddingsUnavailable = true
     throw err
   }
 }
 
 // ─── Public API ───────────────────────────────────────────────────────────────
 
-// Limit concurrent embeddings to avoid rate limits
 async function embedChunksWithConcurrencyControl(
   chunks: Omit<DocChunk, 'id' | 'embedding'>[],
   provider: EmbeddingProvider = 'gemini',
   onWarning?: (msg: string) => void
 ): Promise<{ embedding: number[]; chunk: Omit<DocChunk, 'id' | 'embedding'> }[]> {
-  // Free tier: throughput conservador para evitar 429s
-  // Paid tier: maior concorrência e menor delay
-  const concurrencyLimit = IS_FREE_TIER
-    ? (provider === 'gemini' ? 1 : provider === 'openai' ? 1 : 2)
-    : (provider === 'gemini' ? 1 : provider === 'openai' ? 2 : 3)
-  const delayMs = IS_FREE_TIER
-    ? (provider === 'gemini' ? 700 : provider === 'openai' ? 500 : 300)
-    : (provider === 'gemini' ? 500 : provider === 'openai' ? 300 : 200)
+  const concurrencyLimit = provider === 'gemini' ? 1 : provider === 'openai' ? 1 : provider === 'ollama' ? 4 : 2
+  const delayMs = provider === 'gemini' ? 700 : provider === 'openai' ? 500 : provider === 'ollama' ? 0 : 300
   const results: { embedding: number[]; chunk: Omit<DocChunk, 'id' | 'embedding'> }[] = []
   const queue = [...chunks]
-  let inProgress = 0
   let completed = 0
 
-  console.log(`[EMBED] 🔄 Starting to embed ${chunks.length} chunks with provider: ${provider} (concurrency: ${concurrencyLimit}, delay: ${delayMs}ms)`)
+  console.log(`[EMBED] 🔄 Embedding ${chunks.length} chunks (provider: ${provider}, concurrency: ${concurrencyLimit})`)
 
+  let chunkIndex = 0
   const processChunk = async (chunk: Omit<DocChunk, 'id' | 'embedding'>, index: number) => {
     const titlePrefix = chunk.metadata.title ? `[${chunk.metadata.title}] ` : ''
     const enhancedContent = titlePrefix + chunk.content
 
     let embedding: number[] = []
     try {
-      console.log(`[EMBED] 📍 Processing chunk ${index}/${chunks.length}`)
+      console.log(`[EMBED] 📍 Chunk ${index}/${chunks.length}`)
       embedding = await getEmbedding(enhancedContent, provider, onWarning)
       completed++
     } catch (err) {
@@ -435,36 +358,28 @@ async function embedChunksWithConcurrencyControl(
     return { embedding, chunk }
   }
 
-  let chunkIndex = 0
   const worker = async () => {
     while (queue.length > 0) {
       const chunk = queue.shift()
       if (!chunk) break
 
       const index = chunkIndex++
-      inProgress++
-      try {
-        const result = await processChunk(chunk, index)
-        results.push(result)
-      } finally {
-        inProgress--
-      }
+      const result = await processChunk(chunk, index)
+      results.push(result)
 
-      // Small delay between requests to ease rate limits
-      if (queue.length > 0) {
-        console.log(`[EMBED] ⏸️  Waiting ${delayMs}ms before next chunk (${completed}/${chunks.length} done)`)
+      if (queue.length > 0 && delayMs > 0) {
+        console.log(`[EMBED] ⏸️  Wait ${delayMs}ms (${completed}/${chunks.length})`)
         await new Promise(r => setTimeout(r, delayMs))
       }
     }
   }
 
-  // Start workers
   const workers = Array(Math.min(concurrencyLimit, chunks.length))
     .fill(null)
     .map(() => worker())
 
   await Promise.all(workers)
-  console.log(`[EMBED] ✅ Completed embedding all ${chunks.length} chunks`)
+  console.log(`[EMBED] ✅ Completed ${chunks.length} chunks`)
   return results
 }
 
@@ -473,226 +388,103 @@ export async function addDocChunks(
   provider: EmbeddingProvider = 'gemini',
   onWarning?: (msg: string) => void
 ): Promise<void> {
-  console.log(`[VECTORSTORE] 📥 Adicionando ${chunks.length} chunks (provider: ${provider}, mode: ${IS_FREE_TIER ? 'LOCAL JSON' : 'LanceDB'})`)
+  console.log(`[VECTORSTORE] 📥 Adicionando ${chunks.length} chunks (provider: ${provider})`)
 
   const sourceUrl = chunks[0]?.metadata?.url
   const isSingleSource = !!sourceUrl && chunks.every(c => c.metadata?.url === sourceUrl)
 
-  // Use concurrency-limited embedding
   const embeddedChunks = await embedChunksWithConcurrencyControl(chunks, provider, onWarning)
-
   if (embeddedChunks.length === 0) return
 
-  // ─── FREE_TIER Mode: Use local JSON storage ─────────────────────────────────
-  if (IS_FREE_TIER) {
-    const store = await getLocalStore()
-    
-    // Remove old chunks from same source if single source
-    if (isSingleSource) {
-      store.chunks = store.chunks.filter(c => c.metadata.url !== sourceUrl)
-      console.log(`[VECTORSTORE] 🗑️ Removidos chunks antigos de: ${sourceUrl}`)
-    }
+  const store = await getLocalStore()
 
-    // Add new chunks
-    for (const { embedding, chunk } of embeddedChunks) {
-      store.chunks.push({
-        id: crypto.randomUUID(),
-        content: chunk.content,
-        embedding,
-        metadata: chunk.metadata,
-      })
-    }
-
-    store.updatedAt = new Date().toISOString()
-    await saveLocalStore(store)
-    return
+  if (isSingleSource) {
+    store.chunks = store.chunks.filter(c => c.metadata.url !== sourceUrl)
+    console.log(`[VECTORSTORE] 🗑️ Removidos chunks antigos de: ${sourceUrl}`)
   }
-
-  // ─── LanceDB Mode ────────────────────────────────────────────────────────────
-  const rows: LanceRow[] = []
 
   for (const { embedding, chunk } of embeddedChunks) {
-    rows.push(buildRow(crypto.randomUUID(), embedding, {
-      content:    chunk.content,
-      source:     chunk.metadata.source     ?? '',
-      title:      chunk.metadata.title      ?? '',
-      url:        chunk.metadata.url        ?? '',
-      breadcrumb: chunk.metadata.breadcrumb ?? '',
-      page_type:  chunk.metadata.pageType   ?? '',
-      crawled_at: chunk.metadata.crawledAt  ?? '',
-    }))
+    store.chunks.push({
+      id: crypto.randomUUID(),
+      content: chunk.content,
+      embedding,
+      metadata: chunk.metadata,
+    })
   }
 
-  const vectorDim = rows[0].vector.length || 768
-  const table = await getTable(vectorDim)
-  if (!table) throw new Error('Não foi possível conectar ao LanceDB')
-
-  // Upsert: remove stale rows for this URL, then insert fresh ones
-  if (isSingleSource) {
-    try {
-      await table.delete(`url = '${sourceUrl.replace(/'/g, "''")}'`)
-    } catch { /* table may be empty, ignore */ }
-  } else {
-    // Deduplicate by content across multi-source batch
-    for (const row of rows) {
-      try {
-        await table.delete(`url = '${row.url.replace(/'/g, "''")}' AND content = '${row.content.slice(0, 80).replace(/'/g, "''")}'`)
-      } catch { /* ignore */ }
-    }
-  }
-
-  await table.add(rows)
+  store.updatedAt = new Date().toISOString()
+  await saveLocalStore(store)
 }
 
 export async function searchSimilarDocs(query: string, k = 5, provider: EmbeddingProvider = 'gemini'): Promise<DocChunk[]> {
-  console.log(`[VECTORSTORE] 🔍 Buscando docs (query: "${query.substring(0, 50)}...", k: ${k}, mode: ${IS_FREE_TIER ? 'LOCAL JSON' : 'LanceDB'})`)
+  console.log(`[VECTORSTORE] 🔍 Buscando docs (query: "${query.substring(0, 50)}...", k: ${k})`)
 
-  // ─── FREE_TIER Mode: Use local JSON storage ─────────────────────────────────
-  if (IS_FREE_TIER) {
-    const store = await getLocalStore()
-    if (store.chunks.length === 0) {
-      console.log('[VECTORSTORE] ⚠️ Nenhum chunk encontrado no storage local')
-      return []
-    }
-
-    const queryWords = query.trim().split(/\s+/).filter(Boolean).length
-    const isShortQuery = queryWords <= 2
-    const semanticWeight = isShortQuery ? 0.5 : 0.75
-    const lexicalWeight  = isShortQuery ? 0.5 : 0.25
-
-    try {
-      const queryEmbedding = await getEmbedding(query, provider)
-      
-      const scored = filterDomainNoise(
-        store.chunks.map(chunk => {
-          const semanticScore = cosineSimilarity(queryEmbedding, chunk.embedding)
-          const lexical = lexicalSimilarity(query, chunk.content)
-          return {
-            doc: chunk,
-            score: semanticScore * semanticWeight + lexical * lexicalWeight,
-          }
-        }).sort((a, b) => b.score - a.score).slice(0, Math.max(k * 4, 16)),
-        query
-      )
-
-      const relevant = scored.filter(s => s.score >= 0.08)
-      return rerankDocs(relevant.length > 0 ? relevant : scored, query, k)
-    } catch (err) {
-      console.error('[VECTORSTORE] ❌ Erro na busca local:', err)
-      // Fallback to lexical only
-      const scored = filterDomainNoise(
-        store.chunks.map(chunk => ({
-          doc: chunk,
-          score: lexicalSimilarity(query, chunk.content),
-        })).sort((a, b) => b.score - a.score).slice(0, Math.max(k * 4, 16)),
-        query
-      )
-      const relevant = scored.filter(s => s.score >= 0.03)
-      return rerankDocs(relevant.length > 0 ? relevant : scored, query, k)
-    }
+  const store = await getLocalStore()
+  if (store.chunks.length === 0) {
+    console.log('[VECTORSTORE] ⚠️ Nenhum chunk indexado')
+    return []
   }
 
-  // ─── LanceDB Mode ────────────────────────────────────────────────────────────
-  const table = await getTable()
-  if (!table) return []
-
-  const CANDIDATES = Math.max(k * 4, 16)
   const queryWords = query.trim().split(/\s+/).filter(Boolean).length
   const isShortQuery = queryWords <= 2
   const semanticWeight = isShortQuery ? 0.5 : 0.75
   const lexicalWeight  = isShortQuery ? 0.5 : 0.25
-
-  // Lexical-only fallback (no embeddings)
-  if (embeddingsUnavailable) {
-    const rows: LanceRow[] = await table.query().limit(CANDIDATES * 6).toArray()
-    const scored = filterDomainNoise(
-      rows.map(row => ({
-        doc:   rowToChunk(row),
-        score: lexicalSimilarity(query, row.content),
-      })).sort((a, b) => b.score - a.score).slice(0, CANDIDATES),
-      query
-    )
-    const relevant = scored.filter(s => s.score >= 0.03)
-    return rerankDocs(relevant.length > 0 ? relevant : scored, query, k)
-  }
+  const candidatePoolSize = Math.max(k * 4, 16)
 
   try {
     const queryEmbedding = await getEmbedding(query, provider)
-    const rows: LanceRow[] = await table.search(queryEmbedding).limit(CANDIDATES).toArray()
 
     const scored = filterDomainNoise(
-      rows.map(row => {
-        // LanceDB returns _distance (L2); for normalized vectors: similarity ≈ 1 - distance
-        const semanticScore = Math.max(0, 1 - (row._distance ?? 1))
-        const lexical       = lexicalSimilarity(query, row.content)
-        return {
-          doc:   rowToChunk(row),
-          score: semanticScore * semanticWeight + lexical * lexicalWeight,
-        }
-      }),
+      store.chunks.map(chunk => ({
+        doc: chunk,
+        score:
+          cosineSimilarity(queryEmbedding, chunk.embedding) * semanticWeight +
+          lexicalSimilarity(query, chunk.content) * lexicalWeight,
+      })).sort((a, b) => b.score - a.score).slice(0, candidatePoolSize),
       query
     )
 
-    const relevant = scored.filter(s => s.score >= 0.08)
-    return rerankDocs(relevant.length > 0 ? relevant : scored, query, k)
-  } catch {
-    embeddingsUnavailable = true
-    return searchSimilarDocs(query, k, provider) // recurse to lexical fallback
+    const relevant = scored.filter(s => s.score >= MIN_HYBRID_RELEVANCE)
+    if (relevant.length === 0) {
+      console.log(`[VECTORSTORE] ⚠️ Nenhum chunk acima de ${MIN_HYBRID_RELEVANCE} (top: ${scored[0]?.score.toFixed(3) ?? 'n/a'})`)
+      return []
+    }
+    return rerankDocs(relevant, query, k)
+  } catch (err) {
+    console.error('[VECTORSTORE] ❌ Erro na busca semântica, fallback léxico:', err)
+    const scored = filterDomainNoise(
+      store.chunks.map(chunk => ({
+        doc: chunk,
+        score: lexicalSimilarity(query, chunk.content),
+      })).sort((a, b) => b.score - a.score).slice(0, candidatePoolSize),
+      query
+    )
+    const relevant = scored.filter(s => s.score >= MIN_LEXICAL_RELEVANCE)
+    if (relevant.length === 0) {
+      console.log('[VECTORSTORE] ⚠️ Fallback léxico também não encontrou match relevante')
+      return []
+    }
+    return rerankDocs(relevant, query, k)
   }
 }
 
 export async function getStoreStats(): Promise<{ count: number; sources: string[] }> {
-  // FREE_TIER Mode: Use local JSON storage
-  if (IS_FREE_TIER) {
-    const store = await getLocalStore()
-    const sources = Array.from(new Set(store.chunks.map(c => c.metadata.source).filter(Boolean)))
-    return { count: store.chunks.length, sources }
-  }
-
-  // LanceDB Mode
-  const table = await getTable()
-  if (!table) return { count: 0, sources: [] }
-
-  try {
-    const count: number = await table.countRows()
-    const rows: Pick<LanceRow, 'source'>[] = await table.query().select(['source']).toArray()
-    const sources = Array.from(new Set(rows.map(r => r.source).filter(Boolean)))
-    return { count, sources }
-  } catch {
-    return { count: 0, sources: [] }
-  }
-}
-
-export async function getIndexedSourceUrls(): Promise<string[]> {
-  // FREE_TIER Mode: Use local JSON storage
-  if (IS_FREE_TIER) {
-    const store = await getLocalStore()
-    return Array.from(new Set(store.chunks.map(c => c.metadata.url).filter(Boolean)))
-  }
-
-  // LanceDB Mode
-  const table = await getTable()
-  if (!table) return []
-  try {
-    const rows: Pick<LanceRow, 'url'>[] = await table.query().select(['url']).toArray()
-    return Array.from(new Set(rows.map(r => r.url).filter(Boolean)))
-  } catch { return [] }
+  const store = await getLocalStore()
+  const sources = Array.from(new Set(store.chunks.map(c => c.metadata.source).filter(Boolean)))
+  return { count: store.chunks.length, sources }
 }
 
 export async function getIndexedUrlsWithDates(): Promise<Map<string, string>> {
-  const table = await getTable()
-  if (!table) return new Map()
-  try {
-    const rows: Pick<LanceRow, 'url' | 'crawled_at'>[] =
-      await table.query().select(['url', 'crawled_at']).toArray()
-    const result = new Map<string, string>()
-    for (const row of rows) {
-      if (row.url && row.crawled_at && !result.has(row.url)) {
-        result.set(row.url, row.crawled_at)
-      }
+  const store = await getLocalStore()
+  const result = new Map<string, string>()
+  for (const chunk of store.chunks) {
+    const url = chunk.metadata.url
+    const crawledAt = chunk.metadata.crawledAt
+    if (url && crawledAt && !result.has(url)) {
+      result.set(url, crawledAt)
     }
-    return result
-  } catch { return new Map() }
+  }
+  return result
 }
 
 export function isUrlStale(crawledAt: string | undefined, maxAgeDays = 14): boolean {
@@ -703,9 +495,6 @@ export function isUrlStale(crawledAt: string | undefined, maxAgeDays = 14): bool
 }
 
 export async function clearStore(): Promise<void> {
-  const db = await getDb()
-  try {
-    await db.dropTable(TABLE_NAME)
-  } catch { /* already gone */ }
-  _table = null
+  _localStore = { chunks: [], updatedAt: new Date().toISOString() }
+  await saveLocalStore(_localStore)
 }

@@ -1,4 +1,4 @@
-export type EmbeddingProvider = 'gemini' | 'openai' | 'anthropic' | 'groq' | 'huggingface'
+export type EmbeddingProvider = 'gemini' | 'openai' | 'anthropic' | 'groq' | 'huggingface' | 'ollama'
 
 export interface EmbeddingResult {
   embedding: number[]
