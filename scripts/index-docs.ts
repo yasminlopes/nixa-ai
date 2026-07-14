@@ -58,8 +58,8 @@ async function main() {
     process.exit(1)
   }
 
-  const { crawlPage, discoverLinks, chunkText, SEED_URLS } = await import('../src/lib/crawler')
-  const { addDocChunks, getIndexedUrlsWithDates, isUrlStale } = await import('../src/lib/vectorstore')
+  const { crawlPage, discoverLinks, chunkText, SEED_URLS } = await import('../src/core/crawler')
+  const { addDocChunks, getIndexedUrlsWithDates, isUrlStale } = await import('../src/core/vectorstore')
 
   const MAX_PAGES    = parseInt(process.env.MAX_PAGES    ?? '80')
   const MAX_DEPTH    = parseInt(process.env.MAX_DEPTH    ?? '2')
@@ -164,7 +164,7 @@ async function main() {
     }))
   }
 
-  const { getStoreStats } = await import('../src/lib/vectorstore')
+  const { getStoreStats } = await import('../src/core/vectorstore')
   const stats = await getStoreStats()
 
   console.log(`\n✅  Concluído!`)

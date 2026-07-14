@@ -19,15 +19,10 @@ export async function GET() {
 
 export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => ({}))
-  // Free tier profile (fewer pages/chunks to avoid embedding quota spikes)
   const maxPages: number  = body.maxPages  ?? 20
   const maxDepth: number  = body.maxDepth  ?? 1
-  const staleDays: number = body.staleDays ?? 30   // re-indexa se mais velho que N dias
-  // Paid/higher-throughput profile:
-  // const maxPages: number  = body.maxPages  ?? 60
-  // const maxDepth: number  = body.maxDepth  ?? 2
-  // const staleDays: number = body.staleDays ?? 14
-  const force: boolean    = body.force     ?? false // ignora staleDays, re-indexa tudo
+  const staleDays: number = body.staleDays ?? 30  
+  const force: boolean    = body.force     ?? false
 
   const encoder = new TextEncoder()
 
@@ -37,7 +32,6 @@ export async function POST(req: NextRequest) {
         controller.enqueue(encoder.encode(`data: ${JSON.stringify({ msg })}\n\n`))
       }
 
-      // Coleta warnings de rate limit para enviar ao cliente
       const warnings = new Set<string>()
       function onWarning(msg: string) {
         if (!warnings.has(msg)) {

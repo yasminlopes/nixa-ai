@@ -43,8 +43,6 @@ export async function getOpenAIEmbedding(
   const safe = text.slice(0, 2000)
   const model = process.env.OPENAI_EMBEDDING_MODEL ?? DEFAULT_OPENAI_EMBEDDING_MODEL
 
-  console.log(`[EMBED] 🔄 OpenAI: creating embedding with ${model} (${IS_FREE_TIER ? 'free' : 'paid'} tier)`)
-
   for (let attempt = 0; attempt < 3; attempt++) {
     try {
       const res = await fetch('https://api.openai.com/v1/embeddings', {
@@ -64,32 +62,14 @@ export async function getOpenAIEmbedding(
       if (!res.ok) {
         const data = (await res.json().catch(() => ({}))) as { error?: { message?: string } }
         const errMsg = data.error?.message ?? `OpenAI embedding failed (${res.status})`
-        
-        // Log rate limit details
+
         if (res.status === 429 || isRateLimitError(data.error)) {
-          const rateLimitDetails = {
-            status: res.status,
-            headers: {
-              'retry-after': res.headers.get('retry-after'),
-              'x-ratelimit-limit-requests': res.headers.get('x-ratelimit-limit-requests'),
-              'x-ratelimit-remaining-requests': res.headers.get('x-ratelimit-remaining-requests'),
-              'x-ratelimit-reset-requests': res.headers.get('x-ratelimit-reset-requests'),
-              'x-ratelimit-limit-tokens': res.headers.get('x-ratelimit-limit-tokens'),
-              'x-ratelimit-remaining-tokens': res.headers.get('x-ratelimit-remaining-tokens'),
-            },
-            errorMessage: errMsg,
-          }
-          console.error(`[EMBED] 📊 OpenAI rate limit details:`, JSON.stringify(rateLimitDetails, null, 2))
-          
           const wait = parseRetryDelay(data.error, attempt, res.headers)
-          const msg = `⚠️ OpenAI rate limit. Aguardando ${Math.round(wait / 1000)}s... (attempt ${attempt + 1}/3)`
-          console.warn(`[EMBED] ${msg}`)
-          if (onWarning) onWarning(msg)
+          if (onWarning) onWarning(`OpenAI rate limit. Aguardando ${Math.round(wait / 1000)}s... (tentativa ${attempt + 1}/3)`)
           await new Promise(r => setTimeout(r, wait))
           continue
         }
 
-        console.error(`[EMBED] ❌ OpenAI error (${res.status}):`, errMsg)
         throw new Error(errMsg)
       }
 
@@ -100,12 +80,9 @@ export async function getOpenAIEmbedding(
         throw new Error('No embedding returned from OpenAI')
       }
 
-      console.log(`[EMBED] ✅ OpenAI embedding successful (${embedding.length} dimensions)`)
       return { embedding, model, cached: false }
     } catch (err) {
       if (attempt === 2) throw err
-      const msg = err instanceof Error ? err.message : String(err)
-      console.warn(`[EMBED] ⚠️ Attempt ${attempt + 1} failed: ${msg}`)
       await new Promise(r => setTimeout(r, 500))
     }
   }

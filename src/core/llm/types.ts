@@ -6,9 +6,3 @@ export interface LLMParams {
   history: Message[]
   userMessage: string
 }
-
-export interface LLMConfig {
-  model: string
-  temperature: number
-  maxTokens: number
-}

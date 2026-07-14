@@ -44,10 +44,8 @@ async function getLocalStore(): Promise<LocalStore> {
   try {
     const data = await fs.readFile(LOCAL_STORE_PATH, 'utf-8')
     _localStore = JSON.parse(data) as LocalStore
-    console.log(`[VECTORSTORE] 📦 Carregado ${_localStore.chunks.length} chunks do storage local`)
   } catch {
     _localStore = { chunks: [], updatedAt: new Date().toISOString() }
-    console.log('[VECTORSTORE] 📦 Criando novo storage local')
   }
 
   return _localStore
@@ -57,7 +55,6 @@ async function saveLocalStore(store: LocalStore): Promise<void> {
   await fs.mkdir(path.dirname(LOCAL_STORE_PATH), { recursive: true })
   await fs.writeFile(LOCAL_STORE_PATH, JSON.stringify(store, null, 2), 'utf-8')
   _localStore = store
-  console.log(`[VECTORSTORE] 💾 Salvos ${store.chunks.length} chunks no storage local`)
 }
 
 function cosineSimilarity(a: number[], b: number[]): number {
@@ -262,10 +259,7 @@ export async function getEmbedding(
   const safe = text.slice(0, MAX_EMBED_INPUT_CHARS)
 
   const cached = embeddingCache.get(safe)
-  if (cached) {
-    console.log('[EMBED] 💾 Cache hit')
-    return cached
-  }
+  if (cached) return cached
 
   try {
     let apiKey: string | null = null
@@ -277,27 +271,17 @@ export async function getEmbedding(
       case 'openai':
         apiKey = (await getProviderApiKey(provider)) ?? process.env.OPENAI_API_KEY ?? null
         break
-      case 'anthropic':
-        apiKey = (await getProviderApiKey(provider)) ?? process.env.ANTHROPIC_API_KEY ?? null
-        break
-      case 'groq':
-        apiKey = (await getProviderApiKey(provider)) ?? process.env.GROQ_API_KEY ?? null
-        break
-      case 'huggingface':
-        apiKey = (await getProviderApiKey(provider)) ?? process.env.HUGGINGFACE_API_KEY ?? null
-        break
       case 'ollama':
         apiKey = ''
         break
       default:
-        throw new Error(`[EMBED] ❌ Provider desconhecido: ${provider}`)
+        throw new Error(`Provider desconhecido: ${provider}`)
     }
 
     if (apiKey === null) {
-      throw new Error(`[EMBED] ❌ Chave de API não encontrada para ${provider}.`)
+      throw new Error(`Chave de API não encontrada para ${provider}.`)
     }
 
-    console.log(`[EMBED] 🔑 Provider: ${provider}`)
     const result = await getEmbeddingForProvider(provider, safe, apiKey, onWarning)
 
     embeddingCache.set(safe, result.embedding)
@@ -309,7 +293,7 @@ export async function getEmbedding(
     return result.embedding
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err)
-    console.error(`[EMBED] ❌ Failed: ${msg}`)
+    console.error(`[EMBED] Failed: ${msg}`)
     // Marca como indisponível APENAS para problemas estruturais (chave ausente, auth, serviço fora).
     // Erros de input específico (contexto, content) são por-chunk, não bloqueiam outras chamadas.
     const isPermanent = (
@@ -332,28 +316,22 @@ async function embedChunksWithConcurrencyControl(
   provider: EmbeddingProvider = 'gemini',
   onWarning?: (msg: string) => void
 ): Promise<{ embedding: number[]; chunk: Omit<DocChunk, 'id' | 'embedding'> }[]> {
-  const concurrencyLimit = provider === 'gemini' ? 1 : provider === 'openai' ? 1 : provider === 'ollama' ? 4 : 2
-  const delayMs = provider === 'gemini' ? 700 : provider === 'openai' ? 500 : provider === 'ollama' ? 0 : 300
+  // Rate limits: Gemini/OpenAI pedem serialização com pausa; Ollama é local e aguenta paralelo
+  const concurrencyLimit = provider === 'ollama' ? 4 : 1
+  const delayMs = provider === 'gemini' ? 700 : provider === 'openai' ? 500 : 0
   const results: { embedding: number[]; chunk: Omit<DocChunk, 'id' | 'embedding'> }[] = []
   const queue = [...chunks]
-  let completed = 0
 
-  console.log(`[EMBED] 🔄 Embedding ${chunks.length} chunks (provider: ${provider}, concurrency: ${concurrencyLimit})`)
-
-  let chunkIndex = 0
-  const processChunk = async (chunk: Omit<DocChunk, 'id' | 'embedding'>, index: number) => {
+  const processChunk = async (chunk: Omit<DocChunk, 'id' | 'embedding'>) => {
     const titlePrefix = chunk.metadata.title ? `[${chunk.metadata.title}] ` : ''
     const enhancedContent = titlePrefix + chunk.content
 
     let embedding: number[] = []
     try {
-      console.log(`[EMBED] 📍 Chunk ${index}/${chunks.length}`)
       embedding = await getEmbedding(enhancedContent, provider, onWarning)
-      completed++
     } catch (err) {
       if (String((err as { message?: string })?.message ?? '') !== 'EMBEDDINGS_UNAVAILABLE') throw err
       embeddingsUnavailable = true
-      completed++
     }
     return { embedding, chunk }
   }
@@ -363,12 +341,9 @@ async function embedChunksWithConcurrencyControl(
       const chunk = queue.shift()
       if (!chunk) break
 
-      const index = chunkIndex++
-      const result = await processChunk(chunk, index)
-      results.push(result)
+      results.push(await processChunk(chunk))
 
       if (queue.length > 0 && delayMs > 0) {
-        console.log(`[EMBED] ⏸️  Wait ${delayMs}ms (${completed}/${chunks.length})`)
         await new Promise(r => setTimeout(r, delayMs))
       }
     }
@@ -379,7 +354,6 @@ async function embedChunksWithConcurrencyControl(
     .map(() => worker())
 
   await Promise.all(workers)
-  console.log(`[EMBED] ✅ Completed ${chunks.length} chunks`)
   return results
 }
 
@@ -388,8 +362,6 @@ export async function addDocChunks(
   provider: EmbeddingProvider = 'gemini',
   onWarning?: (msg: string) => void
 ): Promise<void> {
-  console.log(`[VECTORSTORE] 📥 Adicionando ${chunks.length} chunks (provider: ${provider})`)
-
   const sourceUrl = chunks[0]?.metadata?.url
   const isSingleSource = !!sourceUrl && chunks.every(c => c.metadata?.url === sourceUrl)
 
@@ -398,9 +370,9 @@ export async function addDocChunks(
 
   const store = await getLocalStore()
 
+  // Re-indexação da mesma URL substitui os chunks antigos
   if (isSingleSource) {
     store.chunks = store.chunks.filter(c => c.metadata.url !== sourceUrl)
-    console.log(`[VECTORSTORE] 🗑️ Removidos chunks antigos de: ${sourceUrl}`)
   }
 
   for (const { embedding, chunk } of embeddedChunks) {
@@ -417,13 +389,8 @@ export async function addDocChunks(
 }
 
 export async function searchSimilarDocs(query: string, k = 5, provider: EmbeddingProvider = 'gemini'): Promise<DocChunk[]> {
-  console.log(`[VECTORSTORE] 🔍 Buscando docs (query: "${query.substring(0, 50)}...", k: ${k})`)
-
   const store = await getLocalStore()
-  if (store.chunks.length === 0) {
-    console.log('[VECTORSTORE] ⚠️ Nenhum chunk indexado')
-    return []
-  }
+  if (store.chunks.length === 0) return []
 
   const queryWords = query.trim().split(/\s+/).filter(Boolean).length
   const isShortQuery = queryWords <= 2
@@ -445,13 +412,10 @@ export async function searchSimilarDocs(query: string, k = 5, provider: Embeddin
     )
 
     const relevant = scored.filter(s => s.score >= MIN_HYBRID_RELEVANCE)
-    if (relevant.length === 0) {
-      console.log(`[VECTORSTORE] ⚠️ Nenhum chunk acima de ${MIN_HYBRID_RELEVANCE} (top: ${scored[0]?.score.toFixed(3) ?? 'n/a'})`)
-      return []
-    }
+    if (relevant.length === 0) return []
     return rerankDocs(relevant, query, k)
   } catch (err) {
-    console.error('[VECTORSTORE] ❌ Erro na busca semântica, fallback léxico:', err)
+    console.error('[VECTORSTORE] Erro na busca semântica, fallback léxico:', err)
     const scored = filterDomainNoise(
       store.chunks.map(chunk => ({
         doc: chunk,
@@ -460,10 +424,7 @@ export async function searchSimilarDocs(query: string, k = 5, provider: Embeddin
       query
     )
     const relevant = scored.filter(s => s.score >= MIN_LEXICAL_RELEVANCE)
-    if (relevant.length === 0) {
-      console.log('[VECTORSTORE] ⚠️ Fallback léxico também não encontrou match relevante')
-      return []
-    }
+    if (relevant.length === 0) return []
     return rerankDocs(relevant, query, k)
   }
 }

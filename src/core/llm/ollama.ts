@@ -28,8 +28,6 @@ export async function* runOllamaChat(params: LLMParams): AsyncIterable<string> {
     { role: 'user', content: params.userMessage },
   ]
 
-  console.log(`[OLLAMA] 🦙 ${baseUrl}/api/chat (model: ${model}, ${messages.length} messages)`)
-
   let res: Response
   try {
     res = await fetch(`${baseUrl}/api/chat`, {
@@ -61,7 +59,6 @@ export async function* runOllamaChat(params: LLMParams): AsyncIterable<string> {
 
   const decoder = new TextDecoder()
   let buffer = ''
-  let chunkCount = 0
 
   try {
     while (true) {
@@ -83,16 +80,10 @@ export async function* runOllamaChat(params: LLMParams): AsyncIterable<string> {
           }
           if (json.error) throw new Error(`Ollama: ${json.error}`)
           const content = json.message?.content
-          if (content) {
-            chunkCount++
-            yield content
-          }
-          if (json.done) {
-            console.log(`[OLLAMA] ✅ stream done (${chunkCount} chunks)`)
-          }
+          if (content) yield content
         } catch (e) {
           if (e instanceof Error && e.message.startsWith('Ollama:')) throw e
-          console.warn(`[OLLAMA] ⚠️ malformed line ignored: ${trimmed.slice(0, 80)}`)
+          // ignore malformed stream lines
         }
       }
     }

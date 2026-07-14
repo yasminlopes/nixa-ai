@@ -1074,8 +1074,8 @@ function AboutTab() {
           {[
             ['Frontend',    'Next.js 14 · TypeScript · Tailwind'],
             ['Tipografia',  'Inter · Bricolage Grotesque · JetBrains Mono'],
-            ['LLM',         'Gemini · OpenAI · Anthropic · Groq · Ollama'],
-            ['Embeddings',  'Gemini · OpenAI · HuggingFace · Ollama'],
+            ['LLM',         'Gemini · OpenAI · Ollama'],
+            ['Embeddings',  'Gemini · OpenAI · Ollama'],
             ['RAG',         'Crawler + chunk + busca híbrida + expansão PT→EN'],
             ['Vector store','JSON local com cosine + léxico'],
             ['Segurança',   'AES-256-GCM'],

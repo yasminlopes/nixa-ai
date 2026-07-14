@@ -116,7 +116,7 @@ export default function AboutPage() {
               {
                 icon: Bot,
                 title: 'LLM responde',
-                desc: 'Os chunks viram contexto XML estruturado por tipo. O LLM (Gemini, OpenAI, Anthropic, Groq, Ollama) gera a resposta citando fonte inline.',
+                desc: 'Os chunks viram contexto XML estruturado por tipo. O LLM (Gemini, OpenAI, Ollama) gera a resposta citando fonte inline.',
               },
             ]}
           />
@@ -129,8 +129,8 @@ export default function AboutPage() {
             {[
               ['Frontend',     'Next.js 14 · App Router · Tailwind'],
               ['Tipografia',   'Inter · Bricolage Grotesque · JetBrains Mono'],
-              ['LLM',          'Gemini · OpenAI · Anthropic · Groq · HuggingFace · Ollama'],
-              ['Embeddings',   'Gemini · OpenAI · HuggingFace · Ollama'],
+              ['LLM',          'Gemini · OpenAI · Ollama'],
+              ['Embeddings',   'Gemini · OpenAI · Ollama'],
               ['Vector store', 'JSON local (cosine + léxico)'],
               ['Crawler',      'Cheerio + fetch · 90+ seeds'],
               ['Segurança',    'AES-256-GCM nas chaves de API'],

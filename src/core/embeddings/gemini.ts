@@ -57,47 +57,26 @@ export async function getGeminiEmbedding(
   for (const model of EMBEDDING_CANDIDATE_MODELS) {
     for (let attempt = 0; attempt < 4; attempt++) {
       try {
-        console.log(`[EMBED] 🔄 Gemini attempt ${attempt + 1}/4 with model ${model}`)
         const m = genAI.getGenerativeModel({ model })
         const r = await m.embedContent(safe)
-        console.log(`[EMBED] ✅ Gemini embedding successful (${r.embedding.values.length} dimensions)`)
         return { embedding: r.embedding.values, model, cached: false }
       } catch (err) {
         lastErr = err
 
         if (isRateLimitError(err)) {
           const wait = parseRetryDelay(err, attempt)
-          const errorDetails = {
-            status: (err as { status?: number })?.status,
-            message: (err as { message?: string })?.message,
-            error: err,
-          }
-          console.error(`[EMBED] 📊 Rate limit error details:`, JSON.stringify(errorDetails, null, 2))
-          const msg = `⚠️ Gemini rate limit (429). Aguardando ${Math.round(wait / 1000)}s... (attempt ${attempt + 1}/4)`
-          console.warn(`[EMBED] ${msg}`)
-          if (onWarning) onWarning(msg)
+          if (onWarning) onWarning(`Gemini rate limit (429). Aguardando ${Math.round(wait / 1000)}s... (tentativa ${attempt + 1}/4)`)
           await new Promise(r => setTimeout(r, wait))
           continue
         }
 
-        if (!isEmbeddingUnavailableError(err)) {
-          const errorDetails = {
-            status: (err as { status?: number })?.status,
-            message: (err as { message?: string })?.message,
-            error: err,
-          }
-          console.error(`[EMBED] 📊 Gemini error details (model ${model}):`, JSON.stringify(errorDetails, null, 2))
-          throw err
-        }
+        if (!isEmbeddingUnavailableError(err)) throw err
 
-        const msg = `Modelo de embedding Gemini "${model}" indisponível. Tentando próximo...`
-        console.warn(`[EMBED] ⚠️ ${msg}`)
-        if (onWarning) onWarning(`⚠️ ${msg}`)
+        if (onWarning) onWarning(`Modelo de embedding Gemini "${model}" indisponível. Tentando próximo...`)
         break
       }
     }
   }
 
-  console.error('[EMBED] ❌ Gemini embeddings unavailable after all retries')
   throw lastErr ?? new Error('GEMINI_EMBEDDINGS_UNAVAILABLE')
 }

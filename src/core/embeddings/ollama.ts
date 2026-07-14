@@ -47,9 +47,7 @@ export async function getOllamaEmbedding(
   // Trunca pelo limite do modelo (conservador pra evitar "input exceeds context")
   let safe = text.slice(0, charLimit)
 
-  console.log(`[EMBED] 🦙 Ollama -> ${baseUrl} (model: ${model}, chars: ${safe.length}/${charLimit})`)
-
-  // Faz até 2 tentativas com truncamento progressivo se der erro de contexto
+  // Até 2 tentativas com truncamento progressivo se der erro de contexto
   for (let attempt = 0; attempt < 2; attempt++) {
     try {
       const res = await fetch(`${baseUrl}/api/embeddings`, {
@@ -61,14 +59,9 @@ export async function getOllamaEmbedding(
 
       if (!res.ok) {
         const body = await res.text().catch(() => '')
-        // Se for erro de contexto, trunca pela metade e tenta de novo
-        if (body.includes('context length') || body.includes('exceeds')) {
-          if (attempt === 0) {
-            const half = Math.floor(safe.length / 2)
-            console.warn(`[EMBED] ⚠️ Contexto excedido, truncando para ${half} chars`)
-            safe = safe.slice(0, half)
-            continue
-          }
+        if (attempt === 0 && (body.includes('context length') || body.includes('exceeds'))) {
+          safe = safe.slice(0, Math.floor(safe.length / 2))
+          continue
         }
         throw new Error(`Ollama embeddings failed (${res.status}): ${body.slice(0, 200)}`)
       }
@@ -80,21 +73,15 @@ export async function getOllamaEmbedding(
         throw new Error(`Ollama returned empty embedding (${data.error ?? 'unknown'})`)
       }
 
-      console.log(`[EMBED] ✅ Ollama embedding ok (${embedding.length} dims)`)
       return { embedding, model, cached: false }
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err)
       if (msg.includes('ECONNREFUSED') || msg.includes('fetch failed')) {
-        const hint = `⚠️ Ollama não responde em ${baseUrl}. Rode "ollama serve" e "ollama pull ${model}".`
-        console.error(`[EMBED] ❌ ${hint}`)
-        if (onWarning) onWarning(hint)
+        if (onWarning) onWarning(`Ollama não responde em ${baseUrl}. Rode "ollama serve" e "ollama pull ${model}".`)
       }
       if (attempt === 1) throw err
-      // Última chance: se for contexto, trunca pela metade
       if (msg.includes('context length') || msg.includes('exceeds')) {
-        const half = Math.floor(safe.length / 2)
-        console.warn(`[EMBED] ⚠️ Retry com ${half} chars`)
-        safe = safe.slice(0, half)
+        safe = safe.slice(0, Math.floor(safe.length / 2))
         continue
       }
       throw err

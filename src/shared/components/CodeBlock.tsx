@@ -22,8 +22,6 @@ export function CodeBlock({ language, code, isDark = true }: CodeBlockProps) {
     setTimeout(() => setCopied(false), 2000)
   }
 
-  const bgColor = isDark ? 'bg-[#1e1e1e]' : 'bg-[#f5f5f5]'
-  const textColor = isDark ? 'text-gray-300' : 'text-gray-700'
   const headerBg = isDark ? 'bg-[#282c34]' : 'bg-[#eeeeee]'
 
   return (

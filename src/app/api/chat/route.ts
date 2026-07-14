@@ -3,7 +3,7 @@ import { searchSimilarDocs } from '@/core/vectorstore'
 import { buildSystemPrompt } from '@/core/rag'
 import { Message } from '@/shared/types'
 import { getDefaultProvider, getProviderApiKey } from '@/core/settings'
-import { runOpenAIChat, runAnthropicChat, runGroqChat, runGeminiChat, runHuggingFaceChat, runOllamaChat, extractRetryDelaySeconds } from '@/core/llm'
+import { runOpenAIChat, runGeminiChat, runOllamaChat, extractRetryDelaySeconds } from '@/core/llm'
 
 export const runtime = 'nodejs'
 
@@ -78,7 +78,7 @@ async function fetchLatestAgentSdkVersion(): Promise<{ version: string; publishe
   try {
     const response = await fetch(registryUrl, {
       headers: { Accept: 'application/json' },
-      signal: AbortSignal.timeout(3000), // Reduced from 8s to 3s (optional info)
+      signal: AbortSignal.timeout(3000),
     })
 
     if (!response.ok) return null
@@ -218,18 +218,11 @@ export async function POST(req: NextRequest) {
   }
 
   const userMessage = messages[messages.length - 1].content
-  console.log('[CHAT] 📨 New message:', {
-    userMessage: userMessage.substring(0, 100),
-    historyLength: messages.length - 1,
-    userName,
-  })
-
   const retrievalQuery = buildRetrievalQuery(userMessage)
   const history = messages.slice(0, -1)
 
-  // Special case: latest SDK version question (very fast path)
+  // Fast path: pergunta sobre última versão do SDK responde direto do registry NPM
   if (isLatestVersionQuestion(userMessage)) {
-    console.log('[CHAT] ⚡ SDK version question detected - fast path')
     const latest = await fetchLatestAgentSdkVersion()
     if (latest) {
       const published = latest.publishedAt
@@ -246,27 +239,15 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  // PARALLELIZED: Get provider + RAG search at the same time
-  console.log('[CHAT] 🔄 Starting parallel: provider + RAG search')
-  const startTime = Date.now()
-  const [provider] = await Promise.all([getDefaultProvider()])
+  const provider = await getDefaultProvider()
   const relevantDocs = await searchSimilarDocs(retrievalQuery, 5, provider)
-  const parallelTime = Date.now() - startTime
-  console.log('[CHAT] ✅ Parallel done', {
-    provider,
-    docCount: relevantDocs.length,
-    timeTaken: `${parallelTime}ms`,
-  })
 
-  // Avoid LLM calls for clearly out-of-scope prompts to reduce token usage.
   const strictDomainMode = (process.env.STRICT_DOMAIN_MODE ?? 'true') === 'true'
   const hasDomainSignal = isLikelyDomainQuestion(userMessage)
   const hasRelevantDocs = relevantDocs.length > 0
 
-  // Off-topic gate: sem sinal de domínio E sem chunks relevantes → reject sem LLM.
-  // (relevantDocs já vem [] quando nada bate o threshold de relevância no vectorstore)
+  // Off-topic gate: sem sinal de domínio E sem chunks relevantes → responde sem gastar LLM
   if (strictDomainMode && !hasDomainSignal && !hasRelevantDocs) {
-    console.log('[CHAT] 🚫 Pergunta fora do escopo (sem sinal de domínio + sem chunks)')
     return Response.json({
       message:
         'Não localizei essa informação na documentação técnica da NICE CXone. Posso te ajudar com APIs, filas, ACD, Studio, autenticação e configuração da plataforma.',
@@ -294,7 +275,6 @@ export async function POST(req: NextRequest) {
   }
 
   if (!providerApiKey && provider !== 'ollama') {
-    console.error(`[CHAT] ❌ Missing API key for provider: ${provider}`)
     return Response.json(
       {
         message: `Chave da LLM (${provider}) nao configurada. Acesse Configuracoes -> LLM / Chaves para salvar a API key.`,
@@ -311,89 +291,39 @@ export async function POST(req: NextRequest) {
     url: d.metadata.url,
   })))
 
-  if (provider === 'openai' || provider === 'anthropic' || provider === 'groq' || provider === 'huggingface' || provider === 'ollama') {
-    console.log(`[CHAT] 🤖 Starting ${provider.toUpperCase()} streaming`)
-    try {
-      const stream = new ReadableStream({
-        async start(controller) {
-          const enc = new TextEncoder()
-          console.log(`[CHAT] 📡 Creating ${provider} generator`)
-          const chatGenerator =
-            provider === 'openai'
-              ? runOpenAIChat({
-                  apiKey,
-                  systemPrompt,
-                  history,
-                  userMessage,
-                })
-              : provider === 'anthropic'
-              ? runAnthropicChat({
-                  apiKey,
-                  systemPrompt,
-                  history,
-                  userMessage,
-                })
-              : provider === 'groq'
-              ? runGroqChat({
-                  apiKey,
-                  systemPrompt,
-                  history,
-                  userMessage,
-                })
-              : provider === 'ollama'
-              ? runOllamaChat({
-                  apiKey,
-                  systemPrompt,
-                  history,
-                  userMessage,
-                })
-              : runHuggingFaceChat({
-                  apiKey,
-                  systemPrompt,
-                  history,
-                  userMessage,
-                })
+  if (provider === 'openai' || provider === 'ollama') {
+    const stream = new ReadableStream({
+      async start(controller) {
+        const enc = new TextEncoder()
+        const chatGenerator =
+          provider === 'openai'
+            ? runOpenAIChat({ apiKey, systemPrompt, history, userMessage })
+            : runOllamaChat({ apiKey, systemPrompt, history, userMessage })
 
-          try {
-            let chunkCount = 0
-            console.log(`[CHAT] 🔄 Starting to stream chunks from ${provider}`)
-            for await (const chunk of chatGenerator) {
-              chunkCount++
-              controller.enqueue(enc.encode(chunk))
-            }
-            console.log(`[CHAT] ✅ ${provider} sent ${chunkCount} chunks`)
-            // Send sources as a special delimiter the client can parse
-            if (sources.length > 0) {
-              controller.enqueue(enc.encode(`\n\n__SOURCES__${JSON.stringify(sources)}`))
-            }
-          } catch (error) {
-            const errMsg = error instanceof Error ? error.message : String(error)
-            console.error(`[CHAT] ❌ ${provider} error:`, errMsg)
-            controller.enqueue(enc.encode(`\n\nErro: Falha ao consultar ${provider}. Detalhe: ${errMsg}`))
-          } finally {
-            console.log(`[CHAT] 🏁 Closing ${provider} stream`)
-            controller.close()
+        try {
+          for await (const chunk of chatGenerator) {
+            controller.enqueue(enc.encode(chunk))
           }
-        },
-      })
+          // Sources vão no fim como delimitador especial que o client sabe parsear
+          if (sources.length > 0) {
+            controller.enqueue(enc.encode(`\n\n__SOURCES__${JSON.stringify(sources)}`))
+          }
+        } catch (error) {
+          const errMsg = error instanceof Error ? error.message : String(error)
+          console.error(`[CHAT] ${provider} error:`, errMsg)
+          controller.enqueue(enc.encode(`\n\nErro: Falha ao consultar ${provider}. Detalhe: ${errMsg}`))
+        } finally {
+          controller.close()
+        }
+      },
+    })
 
-      return new Response(stream, {
-        headers: {
-          'Content-Type': 'text/plain; charset=utf-8',
-          'X-Content-Type-Options': 'nosniff',
-        },
-      })
-    } catch (error) {
-      const errMsg = error instanceof Error ? error.message : String(error)
-      console.error(`[CHAT] ❌ Stream error for ${provider}:`, errMsg)
-      return Response.json(
-        {
-          message: `Falha ao consultar ${provider}. Detalhe: ${errMsg}`,
-          sources,
-        },
-        { status: 200 }
-      )
-    }
+    return new Response(stream, {
+      headers: {
+        'Content-Type': 'text/plain; charset=utf-8',
+        'X-Content-Type-Options': 'nosniff',
+      },
+    })
   }
 
   let geminiResult: Awaited<ReturnType<typeof runGeminiChat>>
@@ -406,16 +336,14 @@ export async function POST(req: NextRequest) {
     })
   } catch (error) {
     const errMsg = error instanceof Error ? error.message : String(error)
-    console.error('[CHAT] ❌ Gemini fatal error:', errMsg)
+    console.error('[CHAT] Gemini error:', errMsg)
     return Response.json(
       { message: `Falha ao consultar Gemini. Detalhe: ${errMsg}`, sources: [] },
       { status: 200 }
     )
   }
 
-  // Handle rate limit error from Gemini
   if (geminiResult.rateLimitError) {
-    console.warn('[CHAT] ⚠️ Gemini rate limit error detected')
     const retryAfter = extractRetryDelaySeconds(geminiResult.rateLimitError)
     const retryMessage =
       retryAfter != null
@@ -443,29 +371,21 @@ export async function POST(req: NextRequest) {
     })
   }
 
-  // Collect sources to send at the end as a JSON marker
-  console.log('[CHAT] 🤖 Starting Gemini streaming')
   const stream = new ReadableStream({
     async start(controller) {
       const enc = new TextEncoder()
-      let chunkCount = 0
       try {
-        console.log('[CHAT] 🔄 Starting to stream chunks from Gemini')
         for await (const chunk of geminiResult.stream) {
-          chunkCount++
           controller.enqueue(enc.encode(chunk))
         }
-        console.log(`[CHAT] ✅ Gemini sent ${chunkCount} chunks`)
-        // Send sources as a special delimiter the client can parse
         if (sources.length > 0) {
           controller.enqueue(enc.encode(`\n\n__SOURCES__${JSON.stringify(sources)}`))
         }
       } catch (error) {
         const errMsg = error instanceof Error ? error.message : String(error)
-        console.error('[CHAT] ❌ Gemini stream error:', errMsg)
+        console.error('[CHAT] Gemini stream error:', errMsg)
         controller.enqueue(enc.encode(`\n\nErro: Falha ao consultar Gemini. Detalhe: ${errMsg}`))
       } finally {
-        console.log('[CHAT] 🏁 Closing Gemini stream')
         controller.close()
       }
     },

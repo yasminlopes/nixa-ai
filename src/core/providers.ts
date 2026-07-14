@@ -1,7 +1,3 @@
-/**
- * LLM Provider configurations
- */
-
 export type Provider = 'gemini' | 'openai' | 'ollama'
 
 export interface ProviderConfig {
@@ -26,8 +22,4 @@ export const PROVIDERS: Record<Provider, ProviderConfig> = {
     hint: 'Roda 100% local, sem custos',
     color: '#FF6B35',
   },
-}
-
-export function getProviderConfig(provider: Provider): ProviderConfig {
-  return PROVIDERS[provider]
 }

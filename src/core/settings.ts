@@ -2,7 +2,7 @@ import fs from 'fs/promises'
 import path from 'path'
 import crypto from 'crypto'
 
-export type LLMProvider = 'gemini' | 'openai' | 'anthropic' | 'groq' | 'huggingface' | 'ollama'
+export type LLMProvider = 'gemini' | 'openai' | 'ollama'
 
 type EncryptedSettings = {
   defaultProvider: LLMProvider
@@ -17,7 +17,7 @@ export type PublicLLMSettings = {
 }
 
 const SETTINGS_PATH = path.join(process.cwd(), 'data', 'llm-settings.json')
-const PROVIDERS: LLMProvider[] = ['gemini', 'openai', 'anthropic', 'groq', 'huggingface', 'ollama']
+const PROVIDERS: LLMProvider[] = ['gemini', 'openai', 'ollama']
 
 function getCipherKey(): Buffer {
   const secret = process.env.LLM_SETTINGS_MASTER_KEY
@@ -80,9 +80,6 @@ export async function getPublicLLMSettings(): Promise<PublicLLMSettings> {
     hasKeys: {
       gemini: Boolean(encryptedKeys.gemini),
       openai: Boolean(encryptedKeys.openai),
-      anthropic: Boolean(encryptedKeys.anthropic),
-      groq: Boolean(encryptedKeys.groq),
-      huggingface: Boolean(encryptedKeys.huggingface),
       ollama: true,
     },
     updatedAt: settings?.updatedAt ?? null,
