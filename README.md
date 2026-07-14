@@ -22,7 +22,7 @@ O projeto é **multi-LLM**: dá para alternar entre Gemini, OpenAI e Ollama (100
 1. Instale as dependências:
 
    ```bash
-   npm install
+   pnpm install
    ```
 
 2. Crie o `.env.local` (baseado no `.env.local.example`):
@@ -45,7 +45,7 @@ O projeto é **multi-LLM**: dá para alternar entre Gemini, OpenAI e Ollama (100
 1. Suba o app:
 
    ```bash
-   npm run dev
+   pnpm dev
    ```
 
 2. Acesse `http://localhost:3000` e complete o **onboarding** (escolha do provider e chave de API).
@@ -53,7 +53,7 @@ O projeto é **multi-LLM**: dá para alternar entre Gemini, OpenAI e Ollama (100
 3. Indexe a documentação — pela interface (sidebar → **Indexar documentação**) ou via CLI:
 
    ```bash
-   npm run index-docs
+   pnpm index-docs
    ```
 
 4. Comece a conversar. As respostas citam as fontes da documentação usadas como contexto.

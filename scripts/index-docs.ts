@@ -1,18 +1,6 @@
-/**
- * Nixa AI — Indexador de documentação NICE/CXone
- *
- * Uso:
- *   bun run index-docs                     # indexa novas + stale (>14 dias)
- *   FORCE_REINDEX=true bun run index-docs  # re-indexa tudo
- *   MAX_PAGES=100 bun run index-docs       # mais páginas
- *   STALE_DAYS=7 bun run index-docs        # refresh mais frequente
- *
- * Requer GEMINI_API_KEY no .env.local
- */
+
 
 import path from 'path'
-
-// ─── Config via env ───────────────────────────────────────────────────────────
 
 async function loadEnv() {
   const fs = await import('fs/promises')
@@ -27,14 +15,11 @@ async function loadEnv() {
   } catch { /* .env.local opcional */ }
 }
 
-// ─── Prioridade de URL para ordenar a fila ────────────────────────────────────
-
 interface QueueItem { url: string; depth: number; priority: number }
 
 function inferPriority(url: string, depth: number, rank = 0): number {
   const lower = url.toLowerCase()
   let score = 100 - depth * 14 - rank * 0.5
-  // Boost por tipo de conteúdo
   if (/release|whatsnew|changelog/.test(lower)) score += 30
   if (/copilot|enlighten|sentiment/.test(lower))  score += 25
   if (/sdk|agent-sdk/.test(lower))                score += 20
@@ -44,8 +29,6 @@ function inferPriority(url: string, depth: number, rank = 0): number {
   if (/github\.com/.test(lower))                   score -= 5  // útil mas secundário
   return score
 }
-
-// ─── Main ─────────────────────────────────────────────────────────────────────
 
 async function main() {
   await loadEnv()
@@ -123,7 +106,6 @@ async function main() {
         return
       }
 
-      // ── Crawl ──────────────────────────────────────────────────────────
       process.stdout.write(`  ⟳  [${visited.size}/${MAX_PAGES}] ${stale && crawledAt ? '(refresh) ' : ''}${url} `)
 
       const page = await crawlPage(url)
@@ -133,7 +115,6 @@ async function main() {
         return
       }
 
-      // ── Chunking + indexação ────────────────────────────────────────────
       const chunks = chunkText(page.content, page.breadcrumb).map(content => ({
         content,
         metadata: {
@@ -151,7 +132,6 @@ async function main() {
       totalIndexed += chunks.length
       process.stdout.write(`→ ${chunks.length} chunks (${page.pageType})\n`)
 
-      // ── Descobrir links ─────────────────────────────────────────────────
       if (depth < MAX_DEPTH && visited.size < MAX_PAGES) {
         const links = await discoverLinks(url, MAX_LINKS)
         for (const link of links) {

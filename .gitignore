@@ -4,5 +4,6 @@ node_modules/
 data/vectorstore.json
 *.log
 *.tsbuildinfo
-.bun
-/.bun
+bun-lock.*
+yarn.lock
+package-lock.json
