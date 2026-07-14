@@ -17,7 +17,7 @@ O projeto é **multi-LLM**: dá para alternar entre Gemini, OpenAI e Ollama (100
 - **Frontend/API**: Next.js 16 (App Router) · React 19 · TypeScript · Tailwind
 - **LLMs**: Gemini · OpenAI · Ollama
 - **RAG**: crawler próprio (Cheerio) · vector store em JSON local · busca híbrida (semântica + léxica) com re-rank · expansão de query PT→EN
-- **Segurança**: API keys criptografadas com AES-256-GCM
+- **Segurança**: cada visitante guarda a própria API key só no localStorage do navegador — nunca em disco no servidor
 
 > Ollama funciona rodando o projeto localmente (o servidor precisa alcançar o `localhost` da sua máquina). Na [demo hospedada](https://nixa-ai.vercel.app), use Gemini ou OpenAI.
 
@@ -31,11 +31,10 @@ O projeto é **multi-LLM**: dá para alternar entre Gemini, OpenAI e Ollama (100
    pnpm install
    ```
 
-2. Crie o `.env.local` (baseado no `.env.local.example`):
+2. Crie o `.env.local` (baseado no `.env.local.example`) — opcional, só se você quiser um fallback compartilhado do site (visitantes sem chave própria usam essa):
 
    ```env
-   LLM_SETTINGS_MASTER_KEY=uma-chave-forte   # openssl rand -base64 48
-   GEMINI_API_KEY=...                        # https://aistudio.google.com/app/apikey
+   GEMINI_API_KEY=...   # https://aistudio.google.com/app/apikey
    ```
 
 3. (Opcional) Para rodar 100% local com Ollama:
@@ -64,7 +63,7 @@ O projeto é **multi-LLM**: dá para alternar entre Gemini, OpenAI e Ollama (100
 
 4. Comece a conversar. As respostas citam as fontes da documentação usadas como contexto.
 
-As chaves de API também podem ser gerenciadas depois pela interface, em **LLM / Chaves** na sidebar.
+As chaves de API são gerenciadas pela interface, em **LLM / Chaves** na sidebar, e ficam salvas só no seu navegador (localStorage) — nunca em disco no servidor. Isso evita depender de persistência em ambientes serverless (Vercel, por exemplo, tem filesystem somente leitura) e faz cada visitante usar a própria chave, sem compartilhar configuração com outros usuários do site.
 
 ---
 

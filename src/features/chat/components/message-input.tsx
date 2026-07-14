@@ -15,7 +15,6 @@ interface MessageInputProps {
   disabled?: boolean
   provider?: Provider
   onProviderChange?: (provider: Provider) => void
-  isSavingProvider?: boolean
   hasKeys?: Partial<Record<Provider, boolean>>
 }
 
@@ -28,7 +27,6 @@ export function MessageInput({
   disabled,
   provider = 'gemini',
   onProviderChange,
-  isSavingProvider = false,
   hasKeys = {},
 }: MessageInputProps) {
   const textareaRef = useRef<HTMLTextAreaElement>(null)
@@ -89,16 +87,11 @@ export function MessageInput({
             <ProviderSelect
               value={provider}
               onChange={p => onProviderChange?.(p)}
-              disabled={isSavingProvider || isLoading}
+              disabled={isLoading}
               showHint={false}
               size="sm"
               hasKeys={hasKeys}
             />
-            {isSavingProvider && (
-              <span className="text-[11px] animate-pulse" style={{ color: 'var(--color-text-muted)' }}>
-                salvando…
-              </span>
-            )}
           </div>
 
           {isLoading ? (

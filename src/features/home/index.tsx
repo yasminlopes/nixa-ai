@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation'
 import { Conversation } from '@/shared/types'
 import { PanelLeft, KeyRound, ShieldCheck, ArrowRight, Sparkles } from 'lucide-react'
 import { cn } from '@/shared/utils/cn'
+import { hasKey } from '@/shared/utils/llm-settings-storage'
 
 type GateState = 'loading' | 'key' | 'index' | 'done'
 
@@ -28,15 +29,11 @@ export function HomeView() {
 
   async function checkGate() {
     try {
-      const [settingsRes, docsRes] = await Promise.all([
-        fetch('/api/settings'),
-        fetch('/api/index-docs'),
-      ])
-      const settings = await settingsRes.json() as { hasKeys?: Record<string, boolean> }
-      const docs     = await docsRes.json()     as { count: number }
+      const hasAnyKey = hasKey('gemini') || hasKey('openai') || hasKey('ollama')
+      if (!hasAnyKey) { setGateState('key'); return }
 
-      const hasAnyKey = Object.values(settings.hasKeys ?? {}).some(Boolean)
-      if (!hasAnyKey) { setGateState('key');   return }
+      const docsRes = await fetch('/api/index-docs')
+      const docs = await docsRes.json() as { count: number }
       if ((docs.count ?? 0) === 0) { setGateState('index'); return }
       setGateState('done')
     } catch {

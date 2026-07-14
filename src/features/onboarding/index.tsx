@@ -12,13 +12,8 @@ import {
 } from 'lucide-react'
 import { ProviderIcon } from '@/shared/components/provider-icon'
 import { useIsHosted } from '@/shared/hooks/use-is-hosted'
+import { getStoredSettings, saveStoredSettings, hasKey } from '@/shared/utils/llm-settings-storage'
 import { type Provider } from '@/core/providers'
-
-type SettingsPayload = {
-  defaultProvider: Provider
-  hasKeys: Record<Provider, boolean>
-  message?: string
-}
 
 const PROVIDERS: Array<{ id: Provider; label: string; description: string }> = [
   { id: 'gemini', label: 'Gemini',  description: 'Rápido e estável, ideal para uso geral. Tier gratuito disponível.' },
@@ -42,7 +37,6 @@ export function OnboardingView() {
   const [hasKeys, setHasKeys] = useState<Record<Provider, boolean>>({
     gemini: false, openai: false, ollama: true,
   })
-  const [savingProvider, setSavingProvider] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [ready, setReady] = useState(false)
   const [isTyping, setIsTyping] = useState(false)
@@ -102,29 +96,25 @@ export function OnboardingView() {
     finally { setCheckingDocs(false) }
   }
 
-  async function loadSettings() {
-    try {
-      const res = await fetch('/api/settings')
-      const data = (await res.json()) as SettingsPayload
-      if (res.ok) { setProvider(data.defaultProvider); setHasKeys(data.hasKeys) }
-    } catch { /* ignore */ }
+  function loadSettings() {
+    const stored = getStoredSettings()
+    setProvider(stored.defaultProvider)
+    setHasKeys({
+      gemini: hasKey('gemini'),
+      openai: hasKey('openai'),
+      ollama: true,
+    })
   }
 
-  async function persistProviderSelection() {
-    setSavingProvider(true); setError(null)
+  function persistProviderSelection() {
+    setError(null)
     try {
-      const res = await fetch('/api/settings', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ defaultProvider: provider }),
-      })
-      const payload = (await res.json()) as SettingsPayload
-      if (!res.ok) throw new Error(payload.message ?? 'Falha ao salvar LLM inicial')
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Falha ao salvar LLM inicial')
+      saveStoredSettings({ defaultProvider: provider })
+      return true
+    } catch {
+      setError('Falha ao salvar o modelo escolhido neste navegador.')
       return false
-    } finally { setSavingProvider(false) }
-    return true
+    }
   }
 
   function wait(ms: number) { return new Promise(r => setTimeout(r, ms)) }
@@ -139,7 +129,7 @@ export function OnboardingView() {
 
   async function handleContinue() {
     if (step === 1 && !name.trim()) return
-    if (step === 3) { const ok = await persistProviderSelection(); if (!ok) return }
+    if (step === 3) { const ok = persistProviderSelection(); if (!ok) return }
     if (step === 4) {
       localStorage.setItem('nixa-user-name', name.trim())
       localStorage.setItem('nixa-onboarding-v1', 'done')
@@ -584,7 +574,7 @@ export function OnboardingView() {
         >
           <button
             onClick={handleBack}
-            disabled={savingProvider || isTyping}
+            disabled={isTyping}
             className="flex items-center gap-1.5 rounded-md px-3 py-2 text-[12px] font-mono transition-colors disabled:opacity-40"
             style={{
               color: 'var(--color-text-soft)',
@@ -600,7 +590,7 @@ export function OnboardingView() {
             onClick={handleContinue}
             disabled={
               (step === 1 && !name.trim()) ||
-              savingProvider || isTyping ||
+              isTyping ||
               (step === 4 && finalChecklistProgress < 3)
             }
             className="group flex items-center gap-2 rounded-full px-6 py-2.5 text-[13px] font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:scale-[1.02] active:scale-[0.98]"
@@ -611,12 +601,10 @@ export function OnboardingView() {
           >
             {step === 4
               ? finalChecklistProgress < 3 ? 'finalizando…' : 'Começar a usar'
-              : step === 3 && savingProvider
-              ? 'salvando…'
               : isTyping
               ? 'aguarde…'
               : 'Continuar'}
-            {!(step === 4 && finalChecklistProgress < 3) && !savingProvider && !isTyping && (
+            {!(step === 4 && finalChecklistProgress < 3) && !isTyping && (
               <ArrowRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5" />
             )}
           </button>

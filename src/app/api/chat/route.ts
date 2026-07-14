@@ -2,7 +2,7 @@ import { NextRequest } from 'next/server'
 import { searchSimilarDocs } from '@/core/vectorstore'
 import { buildSystemPrompt } from '@/core/rag'
 import { Message } from '@/shared/types'
-import { getDefaultProvider, getProviderApiKey } from '@/core/settings'
+import { type Provider } from '@/core/providers'
 import { runOpenAIChat, runGeminiChat, runOllamaChat, extractRetryDelaySeconds } from '@/core/llm'
 
 export const runtime = 'nodejs'
@@ -211,7 +211,17 @@ function isInconclusiveContext(params: {
 }
 
 export async function POST(req: NextRequest) {
-  const { messages, userName }: { messages: Message[]; userName?: string } = await req.json()
+  const {
+    messages,
+    userName,
+    provider: requestedProvider,
+    apiKey: clientApiKey,
+  }: {
+    messages: Message[]
+    userName?: string
+    provider?: Provider
+    apiKey?: string
+  } = await req.json()
 
   if (!messages?.length) {
     return new Response('Messages required', { status: 400 })
@@ -239,7 +249,7 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  const provider = await getDefaultProvider()
+  const provider: Provider = requestedProvider ?? 'gemini'
   const relevantDocs = await searchSimilarDocs(retrievalQuery, 5, provider)
 
   const strictDomainMode = (process.env.STRICT_DOMAIN_MODE ?? 'true') === 'true'
@@ -264,9 +274,14 @@ export async function POST(req: NextRequest) {
     }),
   })
 
-  let providerApiKey = await getProviderApiKey(provider)
+  // A chave vem do navegador do usuário (localStorage); se ausente, cai no env
+  // compartilhado do site (só existe para gemini/openai, se o dono do deploy configurar).
+  let providerApiKey = clientApiKey?.trim() || null
   if (!providerApiKey && provider === 'gemini') {
     providerApiKey = process.env.GEMINI_API_KEY ?? null
+  }
+  if (!providerApiKey && provider === 'openai') {
+    providerApiKey = process.env.OPENAI_API_KEY ?? null
   }
 
   // Ollama é local e não precisa de chave
@@ -277,7 +292,7 @@ export async function POST(req: NextRequest) {
   if (!providerApiKey && provider !== 'ollama') {
     return Response.json(
       {
-        message: `Chave da LLM (${provider}) nao configurada. Acesse Configuracoes -> LLM / Chaves para salvar a API key.`,
+        message: `Chave da LLM (${provider}) não configurada. Acesse LLM / Chaves para salvar a sua API key.`,
         sources: [],
       },
       { status: 400 }

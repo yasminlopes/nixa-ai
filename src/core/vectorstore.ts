@@ -1,6 +1,5 @@
 import { DocChunk } from '@/shared/types'
 import { getEmbeddingForProvider, type EmbeddingProvider } from '@/core/embeddings'
-import { getProviderApiKey } from '@/core/settings'
 import fs from 'fs/promises'
 import path from 'path'
 
@@ -273,7 +272,7 @@ export async function getEmbedding(
         apiKey = process.env.GEMINI_API_KEY ?? null
         break
       case 'openai':
-        apiKey = (await getProviderApiKey(provider)) ?? process.env.OPENAI_API_KEY ?? null
+        apiKey = process.env.OPENAI_API_KEY ?? null
         break
       case 'ollama':
         apiKey = ''

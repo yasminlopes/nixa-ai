@@ -157,14 +157,9 @@ export function AboutView() {
               className="text-[12.5px] leading-7 overflow-x-auto scrollbar-thin"
               style={{ color: 'var(--color-text)', fontFamily: 'var(--font-mono), monospace' }}
             >
-{`LLM_SETTINGS_MASTER_KEY=   # AES-256 master key (obrigatório)
+{`# Opcionais — fallback compartilhado do site (visitantes usam a própria chave)
 GEMINI_API_KEY=            # Google AI Studio — gratuito
-
-# Opcionais
 OPENAI_API_KEY=
-ANTHROPIC_API_KEY=
-GROQ_API_KEY=
-HUGGINGFACE_API_KEY=
 
 # Ollama (local, sem chave)
 OLLAMA_BASE_URL=           # default http://localhost:11434

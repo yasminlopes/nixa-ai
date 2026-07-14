@@ -7,7 +7,7 @@ import {
   getStoreStats,
   isUrlStale,
 } from '@/core/vectorstore'
-import { getDefaultProvider } from '@/core/settings'
+import { type EmbeddingProvider } from '@/core/embeddings'
 
 export const runtime = 'nodejs'
 export const maxDuration = 300
@@ -21,8 +21,9 @@ export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => ({}))
   const maxPages: number  = body.maxPages  ?? 20
   const maxDepth: number  = body.maxDepth  ?? 1
-  const staleDays: number = body.staleDays ?? 30  
+  const staleDays: number = body.staleDays ?? 30
   const force: boolean    = body.force     ?? false
+  const provider: EmbeddingProvider = body.embeddingProvider ?? 'gemini'
 
   const encoder = new TextEncoder()
 
@@ -52,7 +53,6 @@ export async function POST(req: NextRequest) {
 
         const indexedDates = force ? new Map<string, string>() : await getIndexedUrlsWithDates()
         const initialStats = await getStoreStats()
-        const provider = await getDefaultProvider()
         let indexed = 0, skipped = 0, errors = 0
 
         send(`🚀 Iniciando indexação — ${SEED_URLS.length} seeds, máx ${maxPages} páginas`)

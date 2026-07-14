@@ -129,8 +129,7 @@ export function AboutTab() {
         </p>
         <div className="space-y-2.5 text-[13px]">
           {[
-            ['LLM_SETTINGS_MASTER_KEY', 'Obrigatório — chave de criptografia AES-256'],
-            ['GEMINI_API_KEY',          'Chave do Google AI Studio'],
+            ['GEMINI_API_KEY',          'Opcional — fallback compartilhado do site (visitantes usam a própria chave)'],
             ['OLLAMA_BASE_URL',         'Default http://localhost:11434'],
             ['OLLAMA_MODEL',            'Default llama3.2:1b'],
             ['OLLAMA_EMBEDDING_MODEL',  'Default all-minilm'],

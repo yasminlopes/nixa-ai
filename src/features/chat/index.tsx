@@ -4,15 +4,10 @@ import { useEffect, useRef, useState } from 'react'
 import { Database } from 'lucide-react'
 import { Message as MessageType, Conversation, Source } from '@/shared/types'
 import { type Provider } from '@/core/providers'
+import { getStoredSettings, saveStoredSettings, getApiKey, hasKey } from '@/shared/utils/llm-settings-storage'
 import { Message } from './components/message'
 import { MessageInput } from './components/message-input'
 import { EmptyState } from './components/empty-state'
-
-type SettingsPayload = {
-  defaultProvider: Provider
-  hasKeys?: Partial<Record<Provider, boolean>>
-  message?: string
-}
 
 interface ChatInterfaceProps {
   conversationId: string | null
@@ -26,7 +21,6 @@ export function ChatInterface({ conversationId, onConversationSaved }: ChatInter
   const [docsCount, setDocsCount] = useState<number | null>(null)
   const [provider, setProvider] = useState<Provider>('gemini')
   const [hasKeys, setHasKeys] = useState<Partial<Record<Provider, boolean>>>({})
-  const [isSavingProvider, setIsSavingProvider] = useState(false)
   const bottomRef = useRef<HTMLDivElement>(null)
   const abortRef = useRef<AbortController | null>(null)
 
@@ -50,13 +44,13 @@ export function ChatInterface({ conversationId, onConversationSaved }: ChatInter
   }, [])
 
   useEffect(() => {
-    fetch('/api/settings')
-      .then(r => r.json())
-      .then((d: SettingsPayload) => {
-        if (d.defaultProvider) setProvider(d.defaultProvider)
-        if (d.hasKeys) setHasKeys(d.hasKeys)
-      })
-      .catch(() => {})
+    const stored = getStoredSettings()
+    setProvider(stored.defaultProvider)
+    setHasKeys({
+      gemini: hasKey('gemini'),
+      openai: hasKey('openai'),
+      ollama: true,
+    })
   }, [])
 
   useEffect(() => {
@@ -100,6 +94,8 @@ export function ChatInterface({ conversationId, onConversationSaved }: ChatInter
         body: JSON.stringify({
           messages: [...messages, userMsg],
           userName: localStorage.getItem('nixa-user-name') ?? undefined,
+          provider,
+          apiKey: getApiKey(provider),
         }),
         signal: abortRef.current.signal,
       })
@@ -168,27 +164,9 @@ export function ChatInterface({ conversationId, onConversationSaved }: ChatInter
 
   function handleStop() { abortRef.current?.abort(); setIsLoading(false) }
 
-  async function handleProviderChange(nextProvider: Provider) {
+  function handleProviderChange(nextProvider: Provider) {
     setProvider(nextProvider)
-    setIsSavingProvider(true)
-    try {
-      const res = await fetch('/api/settings', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ defaultProvider: nextProvider }),
-      })
-      if (!res.ok) {
-        const payload = (await res.json()) as SettingsPayload
-        throw new Error(payload.message ?? 'Falha ao trocar LLM')
-      }
-    } catch {
-      fetch('/api/settings')
-        .then(r => r.json())
-        .then((d: SettingsPayload) => { if (d.defaultProvider) setProvider(d.defaultProvider) })
-        .catch(() => {})
-    } finally {
-      setIsSavingProvider(false)
-    }
+    saveStoredSettings({ defaultProvider: nextProvider })
   }
 
   const isStreaming = isLoading && messages[messages.length - 1]?.role === 'assistant'
@@ -256,7 +234,6 @@ export function ChatInterface({ conversationId, onConversationSaved }: ChatInter
             isLoading={isLoading}
             provider={provider}
             onProviderChange={handleProviderChange}
-            isSavingProvider={isSavingProvider}
             hasKeys={hasKeys}
           />
         </div>

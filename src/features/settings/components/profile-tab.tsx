@@ -36,11 +36,6 @@ export function ProfileTab() {
     if (!confirmed) return
     setResetting(true); setMessage(null); setError(null)
     try {
-      await fetch('/api/settings', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ defaultProvider: 'gemini', apiKeys: { gemini: '', openai: '' } }),
-      })
       localStorage.clear(); sessionStorage.clear()
       if (typeof caches !== 'undefined') {
         const keys = await caches.keys()

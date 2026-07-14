@@ -37,12 +37,23 @@ export function WorkspaceModal({ initialTab, onClose }: WorkspaceModalProps) {
     onClose()
   }
 
+  useEffect(() => {
+    function handleKeyDown(e: KeyboardEvent) {
+      if (e.key !== 'Escape') return
+      if (showCloseConfirm) { setShowCloseConfirm(false); return }
+      handleRequestClose()
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  })
+
   if (!mounted) return null
 
   return createPortal(
     <div
       className="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-md p-4"
       style={{ background: 'rgba(15, 14, 12, 0.4)' }}
+      onMouseDown={e => { if (e.target === e.currentTarget) handleRequestClose() }}
     >
       <div
         className="w-full max-w-6xl h-[90vh] overflow-hidden rounded-[22px]"
@@ -144,6 +155,7 @@ export function WorkspaceModal({ initialTab, onClose }: WorkspaceModalProps) {
         <div
           className="fixed inset-0 z-[60] flex items-center justify-center p-4"
           style={{ background: 'rgba(15, 14, 12, 0.4)' }}
+          onMouseDown={e => { if (e.target === e.currentTarget) setShowCloseConfirm(false) }}
         >
           <div
             className="w-full max-w-md rounded-[18px] overflow-hidden"

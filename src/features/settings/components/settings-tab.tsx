@@ -5,15 +5,9 @@ import { AlertTriangle, Check, ShieldCheck } from 'lucide-react'
 import { type Provider } from '@/core/providers'
 import { ProviderIcon } from '@/shared/components/provider-icon'
 import { useIsHosted } from '@/shared/hooks/use-is-hosted'
+import { getStoredSettings, saveStoredSettings, hasKey } from '@/shared/utils/llm-settings-storage'
 import { SectionHeader } from './section-header'
 import { OllamaModelsCard } from './ollama-models-card'
-
-type SettingsPayload = {
-  defaultProvider: Provider
-  hasKeys: Record<Provider, boolean>
-  updatedAt: string | null
-  message?: string
-}
 
 const PROVIDERS: Array<{ id: Provider; label: string; placeholder: string }> = [
   { id: 'gemini', label: 'Google Gemini', placeholder: 'AIza...' },
@@ -21,12 +15,10 @@ const PROVIDERS: Array<{ id: Provider; label: string; placeholder: string }> = [
   { id: 'ollama', label: 'Ollama (local)', placeholder: 'Sem chave — define OLLAMA_BASE_URL no .env' },
 ]
 
-type SaveStatus = 'idle' | 'saving' | 'saved'
+type SaveStatus = 'idle' | 'saved'
 
 export function SettingsTab() {
-  const [loading, setLoading] = useState(true)
   const [saveStatus, setSaveStatus] = useState<SaveStatus>('idle')
-  const [error, setError] = useState<string | null>(null)
   const [updatedAt, setUpdatedAt] = useState<string | null>(null)
   const [defaultProvider, setDefaultProvider] = useState<Provider>('gemini')
   const [initialProvider, setInitialProvider] = useState<Provider>('gemini')
@@ -34,31 +26,20 @@ export function SettingsTab() {
   const [keyValue, setKeyValue] = useState('')
 
   useEffect(() => {
-    let mounted = true
-    ;(async () => {
-      try {
-        const res = await fetch('/api/settings')
-        const data = (await res.json()) as SettingsPayload
-        if (!res.ok) throw new Error(data.message ?? 'Falha ao carregar configurações')
-        if (!mounted) return
-        setDefaultProvider(data.defaultProvider)
-        setInitialProvider(data.defaultProvider)
-        setHasKeys(data.hasKeys)
-        setUpdatedAt(data.updatedAt)
-      } catch (err) {
-        if (!mounted) return
-        setError(err instanceof Error ? err.message : 'Falha ao carregar configurações')
-      } finally {
-        if (mounted) setLoading(false)
-      }
-    })()
-    return () => { mounted = false }
+    const stored = getStoredSettings()
+    setDefaultProvider(stored.defaultProvider)
+    setInitialProvider(stored.defaultProvider)
+    setUpdatedAt(stored.updatedAt)
+    setHasKeys({
+      gemini: hasKey('gemini'),
+      openai: hasKey('openai'),
+      ollama: true,
+    })
   }, [])
 
   function selectProvider(p: Provider) {
     setDefaultProvider(p)
     setKeyValue('')
-    setError(null)
     setSaveStatus('idle')
   }
 
@@ -71,41 +52,32 @@ export function SettingsTab() {
     defaultProvider !== initialProvider ||
     keyValue.trim().length > 0
 
-  async function handleSave() {
+  function handleSave() {
     if (!hasChanges) return
-    setSaveStatus('saving')
-    setError(null)
-    try {
-      const apiKeys = keyValue.trim() ? { [defaultProvider]: keyValue.trim() } : {}
-      const res = await fetch('/api/settings', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ defaultProvider, apiKeys }),
-      })
-      const data = (await res.json()) as SettingsPayload
-      if (!res.ok) throw new Error(data.message ?? 'Falha ao salvar configurações')
-      setHasKeys(data.hasKeys)
-      setUpdatedAt(data.updatedAt)
-      setKeyValue('')
-      setInitialProvider(defaultProvider)
-      setSaveStatus('saved')
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Falha ao salvar configurações')
-      setSaveStatus('idle')
-    }
+    const apiKeys = keyValue.trim() ? { [defaultProvider]: keyValue.trim() } : {}
+    const saved = saveStoredSettings({ defaultProvider, apiKeys })
+    setUpdatedAt(saved.updatedAt)
+    setHasKeys({
+      gemini: hasKey('gemini'),
+      openai: hasKey('openai'),
+      ollama: true,
+    })
+    setKeyValue('')
+    setInitialProvider(defaultProvider)
+    setSaveStatus('saved')
   }
 
   const current = PROVIDERS.find(p => p.id === defaultProvider)!
   const isOllama = defaultProvider === 'ollama'
   const isHosted = useIsHosted()
-  const saveDisabled = loading || saveStatus === 'saving' || saveStatus === 'saved' || !hasChanges
+  const saveDisabled = saveStatus === 'saved' || !hasChanges
 
   return (
     <div>
       <SectionHeader
         eyebrow="Provedores"
         title="LLM e chaves."
-        subtitle="Escolha o modelo padrão e configure as chaves criptografadas."
+        subtitle="Escolha o modelo padrão e configure as chaves — salvas só neste navegador."
       />
 
       <div className="flex flex-wrap gap-2 mb-6">
@@ -232,8 +204,7 @@ export function SettingsTab() {
       >
         <ShieldCheck className="w-3.5 h-3.5 shrink-0 mt-0.5" style={{ color: 'var(--color-text-muted)' }} />
         <span>
-          Chaves criptografadas com{' '}
-          <span style={{ color: 'var(--color-text)' }} className="font-medium">AES-256-GCM</span> no servidor.
+          Salvo só neste navegador (localStorage) — nunca compartilhado com outros visitantes do site.
           {updatedAt && (
             <span style={{ color: 'var(--color-text-muted)' }}>
               {' '}· salvo em {new Date(updatedAt).toLocaleString('pt-BR')}
@@ -241,8 +212,6 @@ export function SettingsTab() {
           )}
         </span>
       </div>
-
-      {error && <p className="mt-3 text-[12.5px]" style={{ color: 'var(--color-accent)' }}>{error}</p>}
 
       <div className="mt-6 flex justify-end">
         <button
@@ -263,15 +232,6 @@ export function SettingsTab() {
               : '1px solid transparent',
           }}
         >
-          {saveStatus === 'saving' && (
-            <>
-              <span
-                className="w-3 h-3 rounded-full border-2 border-current border-t-transparent animate-spin"
-                style={{ borderColor: 'rgba(255,255,255,0.4)', borderTopColor: '#FFFFFF' }}
-              />
-              Salvando…
-            </>
-          )}
           {saveStatus === 'saved' && (
             <>
               <Check className="w-3.5 h-3.5" strokeWidth={2.75} />
