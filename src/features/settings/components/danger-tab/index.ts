@@ -1,1 +1,1 @@
-export { DangerTab } from './danger-tab'
+export { DangerTab } from './danger-tab';

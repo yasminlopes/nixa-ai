@@ -3,9 +3,9 @@
 // (hash) o seletor .dark e ele nunca bateria com a classe real aplicada no
 // <html> pelo ThemeContext.
 @mixin focus-ring {
-  box-shadow: 0 0 0 3px rgba(79, 122, 255, 0.18);
+  box-shadow: 0 0 0 3px rgb(79 122 255 / 18%);
 
   :global(.dark) & {
-    box-shadow: 0 0 0 3px rgba(107, 146, 255, 0.28);
+    box-shadow: 0 0 0 3px rgb(107 146 255 / 28%);
   }
 }

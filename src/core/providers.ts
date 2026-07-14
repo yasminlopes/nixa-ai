@@ -1,9 +1,9 @@
-export type Provider = 'gemini' | 'openai' | 'ollama'
+export type Provider = 'gemini' | 'openai' | 'ollama';
 
 export interface ProviderConfig {
-  label: string
-  hint: string
-  color: string
+  label: string;
+  hint: string;
+  color: string;
 }
 
 export const PROVIDERS: Record<Provider, ProviderConfig> = {
@@ -22,4 +22,4 @@ export const PROVIDERS: Record<Provider, ProviderConfig> = {
     hint: 'Roda 100% local, sem custos',
     color: '#FF6B35',
   },
-}
+};

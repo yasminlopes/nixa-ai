@@ -4,10 +4,10 @@
  * não vazar informação sobre o comprimento dela.
  */
 export function maskKey(key: string): string {
-  const trimmed = key.trim()
-  if (trimmed.length <= 6) return '•'.repeat(8)
+  const trimmed = key.trim();
+  if (trimmed.length <= 6) return '•'.repeat(8);
 
-  const prefix = trimmed.slice(0, 4)
-  const suffix = trimmed.slice(-4)
-  return `${prefix}${'*'.repeat(12)}${suffix}`
+  const prefix = trimmed.slice(0, 4);
+  const suffix = trimmed.slice(-4);
+  return `${prefix}${'*'.repeat(12)}${suffix}`;
 }

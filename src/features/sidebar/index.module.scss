@@ -6,11 +6,14 @@
   flex-direction: column;
   flex-shrink: 0;
   background: var(--color-bg);
+
   @include transition(all);
 }
+
 .asideCollapsed {
   width: 68px;
 }
+
 .asideExpanded {
   width: 280px;
 }
@@ -40,7 +43,7 @@
   border-radius: var(--radius-lg);
   overflow: hidden;
   flex-shrink: 0;
-  background: linear-gradient(135deg, #4F7AFF 0%, #A78BFA 100%);
+  background: linear-gradient(135deg, #4f7aff 0%, #a78bfa 100%);
 }
 
 .logoVideo {
@@ -51,6 +54,7 @@
 
 .logoText {
   @include font-display;
+
   font-weight: var(--font-weight-semibold);
   font-size: 18px;
   color: var(--color-text);
@@ -63,6 +67,7 @@
   height: 32px;
   border-radius: var(--radius-md);
   color: var(--color-text-muted);
+
   @include transition(background-color, 0.15s);
 
   &:hover {
@@ -78,6 +83,7 @@
     display: flex;
   }
 }
+
 .collapseButtonCentered {
   margin-left: auto;
   margin-right: auto;
@@ -100,19 +106,23 @@
   font-weight: var(--font-weight-medium);
   background: var(--color-ink);
   color: var(--color-ink-text);
+
   @include transition(all);
 
   &:hover {
     opacity: 0.9;
   }
+
   &:active {
     transform: scale(0.98);
   }
 }
+
 .newChatButtonCollapsed {
   justify-content: center;
   padding: 10px 8px;
 }
+
 .newChatButtonExpanded {
   gap: 8px;
   padding: 10px 14px;
@@ -124,6 +134,7 @@
   flex: 1;
   overflow-y: auto;
   padding: 0 8px 8px;
+
   @include scrollbar-thin;
 }
 
@@ -138,14 +149,18 @@
   width: 44px;
   height: 44px;
   border-radius: var(--radius-lg);
+
   @include flex-center;
+
   color: var(--color-text-muted);
+
   @include transition(background-color);
 
   &:hover:not(.collapsedItemActive) {
     background: var(--color-hover);
   }
 }
+
 .collapsedItemActive {
   background: var(--color-accent-soft);
   color: var(--color-accent);
@@ -156,6 +171,7 @@
   margin-top: 40px;
   text-align: center;
 }
+
 .emptyStateText {
   font-size: 12.5px;
   line-height: 1.5;
@@ -185,16 +201,18 @@
   border-radius: var(--radius-lg);
   text-align: left;
   color: var(--color-text-soft);
+
   @include transition(background-color);
 
   &:hover:not(.itemActive) {
     background: var(--color-surface);
   }
 }
+
 .itemActive {
   background: var(--color-surface);
   color: var(--color-text);
-  box-shadow: 0 1px 3px rgba(15, 16, 20, 0.04);
+  box-shadow: 0 1px 3px rgb(15 16 20 / 4%);
 }
 
 .itemIcon {
@@ -203,6 +221,7 @@
   flex-shrink: 0;
   color: var(--color-text-muted);
 }
+
 .itemIconActive {
   color: var(--color-accent);
 }
@@ -211,6 +230,7 @@
   flex: 1;
   font-size: 13px;
   line-height: 1.4;
+
   @include truncate;
 }
 
@@ -222,9 +242,11 @@
   color: var(--color-text-muted);
   transition: opacity 0.15s;
 }
+
 .item:hover .itemDelete {
   opacity: 0.4;
 }
+
 .itemDelete:hover {
   opacity: 1;
 }
@@ -241,6 +263,7 @@
   font-size: 14px;
   padding: 8px;
   background: var(--color-surface);
+
   @include transition(background-color);
 
   &:hover {
@@ -271,7 +294,9 @@
   width: 36px;
   height: 36px;
   border-radius: var(--radius-full);
+
   @include flex-center;
+
   font-size: 13px;
   font-weight: var(--font-weight-medium);
   background: var(--color-ink);
@@ -289,6 +314,7 @@
   font-size: 13px;
   font-weight: var(--font-weight-semibold);
   color: var(--color-text);
+
   @include truncate;
 }
 

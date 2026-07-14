@@ -1,10 +1,11 @@
-'use client'
+'use client';
 
-import { useChat } from './hooks/use-chat'
-import { ChatList } from './components/chat-list'
-import { ChatInput } from './components/chat-input'
-import { type ChatViewProps } from './types'
-import styles from './index.module.scss'
+import { ChatInput } from './components/chat-input';
+import { ChatList } from './components/chat-list';
+import { useChat } from './hooks/use-chat';
+import { type ChatViewProps } from './types';
+
+import styles from './index.module.scss';
 
 export function ChatInterface(props: ChatViewProps) {
   const {
@@ -20,7 +21,7 @@ export function ChatInterface(props: ChatViewProps) {
     handleSubmit,
     handleStop,
     handleProviderChange,
-  } = useChat(props)
+  } = useChat(props);
 
   return (
     <div className={styles.wrapper}>
@@ -28,7 +29,7 @@ export function ChatInterface(props: ChatViewProps) {
         messages={messages}
         isStreaming={isStreaming}
         docsCount={docsCount}
-        onSuggest={q => handleSubmit(q)}
+        onSuggest={(q) => handleSubmit(q)}
         bottomRef={bottomRef}
       />
 
@@ -47,5 +48,5 @@ export function ChatInterface(props: ChatViewProps) {
         </div>
       </div>
     </div>
-  )
+  );
 }

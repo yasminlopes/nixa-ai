@@ -1,1 +1,1 @@
-export { LlamaIcon } from './llama-icon'
+export { LlamaIcon } from './llama-icon';

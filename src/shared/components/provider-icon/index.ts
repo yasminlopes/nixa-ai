@@ -1,1 +1,1 @@
-export { ProviderIcon } from './provider-icon'
+export { ProviderIcon } from './provider-icon';

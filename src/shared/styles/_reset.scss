@@ -44,6 +44,7 @@
     text-transform: none;
   }
 
+  /* stylelint-disable property-no-vendor-prefix, declaration-property-value-keyword-no-deprecated -- Preflight: `-webkit-appearance: button` é intencional, mantém o rendering nativo de botões no iOS Safari. Trocar por `auto` regride o estilo. */
   button,
   [type='button'],
   [type='reset'],
@@ -51,6 +52,7 @@
     -webkit-appearance: button;
     appearance: button;
   }
+  /* stylelint-enable property-no-vendor-prefix, declaration-property-value-keyword-no-deprecated */
 
   button {
     cursor: pointer;
@@ -78,25 +80,28 @@
     font-feature-settings: 'cv11', 'ss01';
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-    text-rendering: optimizeLegibility;
+    text-rendering: optimizelegibility;
   }
 
   ::selection {
     background: var(--color-accent);
-    color: #FFFFFF;
+    color: #fff;
   }
 
   ::-webkit-scrollbar {
     width: 6px;
     height: 6px;
   }
+
   ::-webkit-scrollbar-track {
     background: transparent;
   }
+
   ::-webkit-scrollbar-thumb {
     background: var(--color-surface-3);
     border-radius: 3px;
   }
+
   ::-webkit-scrollbar-thumb:hover {
     background: var(--color-text-muted);
   }

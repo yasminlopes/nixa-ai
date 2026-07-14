@@ -1,18 +1,19 @@
 import {
-  Globe,
-  Scissors,
-  Sparkles,
+  Bot,
   Database,
-  MessageSquare,
+  Globe,
   Languages,
+  MessageSquare,
+  Scissors,
   Search,
   ShieldCheck,
-  Bot,
-} from 'lucide-react'
+  Sparkles,
+} from 'lucide-react';
 
-import { Section } from './components/section'
-import { PhaseCard } from './components/phase-card'
-import styles from './index.module.scss'
+import { PhaseCard } from './components/phase-card';
+import { Section } from './components/section';
+
+import styles from './index.module.scss';
 
 const STACK: Array<[string, string]> = [
   ['Frontend', 'Next.js 16 · App Router · SCSS Modules'],
@@ -23,27 +24,28 @@ const STACK: Array<[string, string]> = [
   ['Crawler', 'Cheerio + fetch · 90+ seeds'],
   ['Segurança', 'Chaves cifradas no navegador · nunca salvas no servidor'],
   ['Deploy', 'Local-first · Vercel-ready'],
-]
+];
 
 export function AboutView() {
   return (
     <main className={styles.main}>
       <div className={styles.inner}>
-
         {/* Hero */}
         <div className={styles.hero}>
           <p className={styles.heroEyebrow}>— uma assistente em NICE CXone</p>
           <h1 className={styles.heroTitle}>Nixa.</h1>
           <p className={styles.heroSubtitle}>
-            Um chat com RAG sobre a documentação oficial da NICE/CXone.
-            Local-first, multi-LLM, focado em respostas precisas com citação de fonte.
+            Um chat com RAG sobre a documentação oficial da NICE/CXone. Local-first, multi-LLM,
+            focado em respostas precisas com citação de fonte.
           </p>
         </div>
 
         {/* ─── Como funciona ────────────────────────────────────────── */}
         <Section eyebrow="01" title="Como funciona">
           <p className={styles.introText}>
-            Dois momentos: a <b className={styles.introStrong}>indexação</b> acontece uma vez (ou sempre que você quiser atualizar a base) e a <b className={styles.introStrong}>conversa</b> roda a cada pergunta.
+            Dois momentos: a <b className={styles.introStrong}>indexação</b> acontece uma vez (ou
+            sempre que você quiser atualizar a base) e a{' '}
+            <b className={styles.introStrong}>conversa</b> roda a cada pergunta.
           </p>
 
           {/* Fase 1 — Indexação */}
@@ -127,7 +129,7 @@ export function AboutView() {
         <Section eyebrow="03" title="Variáveis de ambiente">
           <div className={styles.envCard}>
             <pre className={styles.envPre}>
-{`# Nenhuma chave de API em env — elas ficam cifradas no navegador
+              {`# Nenhuma chave de API em env — elas ficam cifradas no navegador
 # (react-secure-storage) e vão ao servidor a cada request. Tudo opcional:
 
 # Ollama (local, sem chave)
@@ -153,7 +155,17 @@ NIXA_EMBEDDING_PROVIDER=      # default gemini`}
                 className={styles.footerLink}
               >
                 yasminlopes.dev
-                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <svg
+                  width="11"
+                  height="11"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden="true"
+                >
                   <path d="M7 17 L17 7" />
                   <path d="M8 7 L17 7 L17 16" />
                 </svg>
@@ -164,5 +176,5 @@ NIXA_EMBEDDING_PROVIDER=      # default gemini`}
         </footer>
       </div>
     </main>
-  )
+  );
 }

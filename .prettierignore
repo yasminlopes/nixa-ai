@@ -6,3 +6,6 @@ coverage
 build
 dist
 *.log
+
+# gerado pelo Next a cada build
+next-env.d.ts

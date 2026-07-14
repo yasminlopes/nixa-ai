@@ -7,16 +7,19 @@
     transform: translateX(-10px);
     opacity: 0;
   }
+
   to {
     transform: translateX(0);
     opacity: 1;
   }
 }
+
 @keyframes slideInFromRight {
   from {
     transform: translateX(10px);
     opacity: 0;
   }
+
   to {
     transform: translateX(0);
     opacity: 1;
@@ -29,13 +32,17 @@
   width: 100%;
   min-width: 0;
   padding: 12px 0;
+
   @include transition(all, 0.3s);
+
   transition-timing-function: ease-out;
 }
+
 .rowUser {
   justify-content: flex-end;
   animation: slideInFromRight 0.3s ease-out forwards;
 }
+
 .rowAssistant {
   animation: slideInFromLeft 0.3s ease-out forwards;
 }
@@ -44,11 +51,13 @@
   max-width: 82%;
   min-width: 0;
 }
+
 .bubbleWrapUser {
   display: flex;
   flex-direction: column;
   align-items: flex-end;
 }
+
 .bubbleWrapAssistant {
   flex: 1;
 }
@@ -102,6 +111,7 @@
   :global(p) {
     margin-bottom: 8px;
   }
+
   :global(p:last-child) {
     margin-bottom: 0;
   }
@@ -112,7 +122,7 @@
   border-radius: 4px;
   font-size: 12px;
   font-family: var(--font-family-mono);
-  background: rgba(255, 255, 255, 0.14);
+  background: rgb(255 255 255 / 14%);
 }
 
 // ─── Copy button ───────────────────────────────────────────────────────────
@@ -124,6 +134,7 @@
   font-size: 11px;
   font-weight: var(--font-weight-medium);
   color: var(--color-text-muted);
+
   @include transition(color);
 
   &.copyButtonActive {
@@ -155,6 +166,7 @@
   font-size: 11px;
   font-weight: var(--font-weight-medium);
   color: var(--color-text-soft);
+
   @include font-mono;
 }
 
@@ -176,6 +188,7 @@
   user-select: none;
   width: fit-content;
   color: var(--color-text-muted);
+
   @include transition(color);
 
   &::-webkit-details-marker {
@@ -188,6 +201,7 @@
   height: 10px;
   transition: transform 0.15s;
 }
+
 .sources[open] .sourcesChevron {
   transform: rotate(180deg);
 }
@@ -209,6 +223,7 @@
   background: var(--color-surface-2);
   color: var(--color-text-soft);
   border: 1px solid var(--color-border);
+
   @include transition(all);
   @include truncate;
 
@@ -222,8 +237,10 @@
   height: 10px;
   flex-shrink: 0;
   opacity: 0.5;
+
   @include transition(opacity);
 }
+
 .sourceLink:hover .sourceLinkIcon {
   opacity: 1;
 }

@@ -1,25 +1,25 @@
-import { DocChunk, Message } from '@/shared/types'
+import { DocChunk, Message } from '@/shared/types';
 
 function compressChunk(text: string, maxChars = 700): string {
-  if (text.length <= maxChars) return text
+  if (text.length <= maxChars) return text;
 
-  const truncated = text.slice(0, maxChars)
-  const lastParagraphBreak = truncated.lastIndexOf('\n\n')
+  const truncated = text.slice(0, maxChars);
+  const lastParagraphBreak = truncated.lastIndexOf('\n\n');
   if (lastParagraphBreak > Math.floor(maxChars * 0.65)) {
-    return `${truncated.slice(0, lastParagraphBreak).trim()} [Resumo...]`
+    return `${truncated.slice(0, lastParagraphBreak).trim()} [Resumo...]`;
   }
 
-  const lastLineBreak = truncated.lastIndexOf('\n')
+  const lastLineBreak = truncated.lastIndexOf('\n');
   if (lastLineBreak > Math.floor(maxChars * 0.7)) {
-    return `${truncated.slice(0, lastLineBreak).trim()} [Resumo...]`
+    return `${truncated.slice(0, lastLineBreak).trim()} [Resumo...]`;
   }
 
-  const lastPeriod = truncated.lastIndexOf('.')
+  const lastPeriod = truncated.lastIndexOf('.');
   if (lastPeriod > Math.floor(maxChars * 0.65)) {
-    return `${truncated.slice(0, lastPeriod + 1).trim()} [Resumo...]`
+    return `${truncated.slice(0, lastPeriod + 1).trim()} [Resumo...]`;
   }
 
-  return `${truncated.trim()}...`
+  return `${truncated.trim()}...`;
 }
 
 function escapeXml(value: string): string {
@@ -28,17 +28,17 @@ function escapeXml(value: string): string {
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
-    .replace(/'/g, '&apos;')
+    .replace(/'/g, '&apos;');
 }
 
 function sourcePriority(pageType: DocChunk['metadata']['pageType']): number {
-  const type = pageType ?? 'other'
-  if (type === 'api') return 1
-  if (type === 'reference') return 2
-  if (type === 'guide') return 3
-  if (type === 'release') return 4
-  if (type === 'faq') return 5
-  return 6
+  const type = pageType ?? 'other';
+  if (type === 'api') return 1;
+  if (type === 'reference') return 2;
+  if (type === 'guide') return 3;
+  if (type === 'release') return 4;
+  if (type === 'faq') return 5;
+  return 6;
 }
 
 function buildStructuredContext(docs: DocChunk[]): string {
@@ -49,33 +49,39 @@ function buildStructuredContext(docs: DocChunk[]): string {
     release: [],
     faq: [],
     other: [],
-  }
+  };
 
   for (const doc of docs) {
-    const type = doc.metadata.pageType ?? 'other'
-    grouped[type] = grouped[type] ?? []
-    grouped[type].push(doc)
+    const type = doc.metadata.pageType ?? 'other';
+    grouped[type] = grouped[type] ?? [];
+    grouped[type].push(doc);
   }
 
   const sections = Object.entries(grouped)
     .filter(([, items]) => items.length > 0)
-    .sort((a, b) => sourcePriority(a[0] as DocChunk['metadata']['pageType']) - sourcePriority(b[0] as DocChunk['metadata']['pageType']))
+    .sort(
+      (a, b) =>
+        sourcePriority(a[0] as DocChunk['metadata']['pageType']) -
+        sourcePriority(b[0] as DocChunk['metadata']['pageType']),
+    )
     .map(([type, items]) => {
       const docsText = items
         .map(
           (doc, index) =>
             `<document index="${index + 1}" type="${escapeXml(type)}" url="${escapeXml(doc.metadata.url)}">\n` +
             `  <title>${escapeXml(doc.metadata.title)}</title>\n` +
-            (doc.metadata.breadcrumb ? `  <breadcrumb>${escapeXml(doc.metadata.breadcrumb)}</breadcrumb>\n` : '') +
+            (doc.metadata.breadcrumb
+              ? `  <breadcrumb>${escapeXml(doc.metadata.breadcrumb)}</breadcrumb>\n`
+              : '') +
             `  <content>${escapeXml(compressChunk(doc.content))}</content>\n` +
-            `</document>`
+            `</document>`,
         )
-        .join('\n\n')
+        .join('\n\n');
 
-      return `<section type="${escapeXml(type.toUpperCase())}">\n${docsText}\n</section>`
-    })
+      return `<section type="${escapeXml(type.toUpperCase())}">\n${docsText}\n</section>`;
+    });
 
-  return `<context>\n${sections.join('\n')}\n</context>`
+  return `<context>\n${sections.join('\n')}\n</context>`;
 }
 
 function stripIntroPrefix(text: string): string {
@@ -83,37 +89,36 @@ function stripIntroPrefix(text: string): string {
     /^\s*(ol[aá]|oi|hello|hi)[^\n.!?]{0,80}\b(nixa)\b[^\n.!?]*[\n.!?\-:]*/i,
     /^\s*eu\s+sou\s+a\s+nixa[^\n.!?]*[\n.!?\-:]*/i,
     /^\s*ol[aá],?\s+sou\s+a\s+nixa[^\n.!?]*[\n.!?\-:]*/i,
-  ]
+  ];
 
-  let cleaned = text
+  let cleaned = text;
   for (const pattern of patterns) {
-    cleaned = cleaned.replace(pattern, '')
+    cleaned = cleaned.replace(pattern, '');
   }
 
-  return cleaned.trimStart()
+  return cleaned.trimStart();
 }
 
 export function buildSystemPrompt(
   docs: DocChunk[],
   userName?: string,
-  options?: { isInconclusive?: boolean; isDefinitionQuestion?: boolean }
+  options?: { isInconclusive?: boolean; isDefinitionQuestion?: boolean },
 ): string {
-  const context = docs.length > 0
-    ? buildStructuredContext(docs)
-    : 'Nenhuma documentação indexada ainda.'
+  const context =
+    docs.length > 0 ? buildStructuredContext(docs) : 'Nenhuma documentação indexada ainda.';
 
-  const safeUserName = (userName ?? '').trim()
+  const safeUserName = (userName ?? '').trim();
   const personalization = safeUserName
     ? `\n- Trate ${safeUserName} de forma profissional e amigável.`
-    : ''
+    : '';
 
   const definitionInstruction = options?.isDefinitionQuestion
     ? '\n- Para perguntas "o que é X", comece pelo que a documentação confirma, depois o que ela menciona, e por fim o limite da evidência.'
-    : ''
+    : '';
 
   const continuationHint = options?.isInconclusive
     ? '\n- Se a resposta estiver incompleta, termine com uma sugestão natural e breve para aprofundar (sem rótulo forçado).'
-    : ''
+    : '';
 
   return `Você é a Nixa AI, assistente especialista da NICE CXone.
 
@@ -166,38 +171,37 @@ PROIBIDO (não faça isso em hipótese alguma):
 - Listar títulos de seções como se fossem valores de um atributo (ver "Mapeamento Estrito" acima)
 
 DOCUMENTAÇÃO DISPONÍVEL:
-${context}`
+${context}`;
 }
 
 export function formatConversationHistory(
-  messages: Message[]
+  messages: Message[],
 ): Array<{ role: 'user' | 'model'; parts: Array<{ text: string }> }> {
-  const MAX_MESSAGES = 10
-  const CHAR_BUDGET = 5500
+  const MAX_MESSAGES = 10;
+  const CHAR_BUDGET = 5500;
 
-  const sliced = messages.slice(-MAX_MESSAGES)
-  const selected: Message[] = []
-  let used = 0
+  const sliced = messages.slice(-MAX_MESSAGES);
+  const selected: Message[] = [];
+  let used = 0;
 
   for (let i = sliced.length - 1; i >= 0; i--) {
-    const message = sliced[i]
-    const normalized = message.role === 'assistant'
-      ? stripIntroPrefix(message.content)
-      : message.content
+    const message = sliced[i];
+    const normalized =
+      message.role === 'assistant' ? stripIntroPrefix(message.content) : message.content;
 
-    const cost = normalized.length + 20
+    const cost = normalized.length + 20;
     if (selected.length > 0 && used + cost > CHAR_BUDGET) {
-      continue
+      continue;
     }
 
-    selected.push({ ...message, content: normalized })
-    used += cost
+    selected.push({ ...message, content: normalized });
+    used += cost;
   }
 
-  selected.reverse()
+  selected.reverse();
 
-  return selected.map(message => ({
+  return selected.map((message) => ({
     role: message.role === 'assistant' ? 'model' : 'user',
     parts: [{ text: message.content }],
-  }))
+  }));
 }

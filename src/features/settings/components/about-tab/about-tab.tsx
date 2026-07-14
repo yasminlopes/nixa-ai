@@ -1,19 +1,33 @@
-import { ArrowDown, BookOpen, Brain, Sparkles } from 'lucide-react'
-import { SectionHeader } from '../section-header'
-import styles from './about-tab.module.scss'
+import { ArrowDown, BookOpen, Brain, Sparkles } from 'lucide-react';
+
+import { SectionHeader } from '../section-header';
+
+import styles from './about-tab.module.scss';
 
 const STEPS = [
-  { icon: Brain,    title: 'Entendimento',       desc: 'A pergunta é analisada por modelos de IA para identificar intenção e contexto.' },
-  { icon: BookOpen, title: 'Busca inteligente',  desc: 'A Nixa encontra os trechos relevantes na base de conhecimento NICE/CXone.' },
-  { icon: Sparkles, title: 'Resposta contextual', desc: 'O modelo gera uma resposta fundamentada nas fontes encontradas, com citações.' },
-]
+  {
+    icon: Brain,
+    title: 'Entendimento',
+    desc: 'A pergunta é analisada por modelos de IA para identificar intenção e contexto.',
+  },
+  {
+    icon: BookOpen,
+    title: 'Busca inteligente',
+    desc: 'A Nixa encontra os trechos relevantes na base de conhecimento NICE/CXone.',
+  },
+  {
+    icon: Sparkles,
+    title: 'Resposta contextual',
+    desc: 'O modelo gera uma resposta fundamentada nas fontes encontradas, com citações.',
+  },
+];
 
 const TECH_GROUPS: Array<{ label: string; items: string[] }> = [
-  { label: 'Frontend',     items: ['Next.js', 'TypeScript', 'SCSS Modules'] },
-  { label: 'IA',           items: ['Gemini', 'OpenAI', 'Ollama'] },
+  { label: 'Frontend', items: ['Next.js', 'TypeScript', 'SCSS Modules'] },
+  { label: 'IA', items: ['Gemini', 'OpenAI', 'Ollama'] },
   { label: 'Conhecimento', items: ['RAG', 'Embeddings', 'Vector Store'] },
-  { label: 'Segurança',    items: ['AES-256-GCM'] },
-]
+  { label: 'Segurança', items: ['AES-256-GCM'] },
+];
 
 export function AboutTab() {
   return (
@@ -60,8 +74,10 @@ export function AboutTab() {
             <div key={label} className={styles.techGroup}>
               <span className={styles.techGroupLabel}>{label}</span>
               <div className={styles.chips}>
-                {items.map(item => (
-                  <span key={item} className={styles.chip}>{item}</span>
+                {items.map((item) => (
+                  <span key={item} className={styles.chip}>
+                    {item}
+                  </span>
                 ))}
               </div>
             </div>
@@ -82,12 +98,22 @@ export function AboutTab() {
           className={styles.creditsLink}
         >
           yasminlopes.dev
-          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <svg
+            width="10"
+            height="10"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden="true"
+          >
             <path d="M7 17 L17 7" />
             <path d="M8 7 L17 7 L17 16" />
           </svg>
         </a>
       </div>
     </div>
-  )
+  );
 }

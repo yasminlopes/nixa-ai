@@ -1,1 +1,1 @@
-export { Avatar, type AvatarProps, type AvatarSize } from './avatar'
+export { Avatar, type AvatarProps, type AvatarSize } from './avatar';

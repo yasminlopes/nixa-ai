@@ -1,20 +1,24 @@
-import { Message } from '@/shared/types'
-import { LLMParams } from './types'
+import { Message } from '@/shared/types';
 
-function toFlatHistory(messages: Message[]): Array<{ role: 'user' | 'assistant'; content: string }> {
-  return messages
-    .slice(-10)
-    .map(message => ({ role: message.role === 'assistant' ? 'assistant' : 'user', content: message.content }))
+import { LLMParams } from './types';
+
+function toFlatHistory(
+  messages: Message[],
+): Array<{ role: 'user' | 'assistant'; content: string }> {
+  return messages.slice(-10).map((message) => ({
+    role: message.role === 'assistant' ? 'assistant' : 'user',
+    content: message.content,
+  }));
 }
 
 export async function* runOpenAIChat(params: LLMParams): AsyncIterable<string> {
-  const model = process.env.OPENAI_MODEL ?? 'gpt-4o-mini'
+  const model = process.env.OPENAI_MODEL ?? 'gpt-4o-mini';
 
   const messages = [
     { role: 'system', content: params.systemPrompt },
     ...toFlatHistory(params.history),
     { role: 'user', content: params.userMessage },
-  ]
+  ];
 
   const response = await fetch('https://api.openai.com/v1/chat/completions', {
     method: 'POST',
@@ -30,41 +34,40 @@ export async function* runOpenAIChat(params: LLMParams): AsyncIterable<string> {
       stream: true,
     }),
     signal: AbortSignal.timeout(15000),
-  })
+  });
 
   if (!response.ok) {
-    const data = (await response.json().catch(() => ({}))) as { error?: { message?: string } }
-    throw new Error(data.error?.message ?? `OpenAI request failed (${response.status})`)
+    const data = (await response.json().catch(() => ({}))) as { error?: { message?: string } };
+    throw new Error(data.error?.message ?? `OpenAI request failed (${response.status})`);
   }
 
-  const reader = response.body?.getReader()
-  if (!reader) throw new Error('No response body')
+  const reader = response.body?.getReader();
+  if (!reader) throw new Error('No response body');
 
-  const decoder = new TextDecoder()
-  let buffer = ''
+  const decoder = new TextDecoder();
+  let buffer = '';
 
   try {
     while (true) {
-      const { done, value } = await reader.read()
-      if (done) break
+      const { done, value } = await reader.read();
+      if (done) break;
 
-      buffer += decoder.decode(value, { stream: true })
-      const lines = buffer.split('\n')
-      buffer = lines.pop() ?? ''
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split('\n');
+      buffer = lines.pop() ?? '';
 
       for (const line of lines) {
-        if (!line.startsWith('data: ')) continue
-        const data = line.slice(6)
-        if (data === '[DONE]') continue
+        if (!line.startsWith('data: ')) continue;
+        const data = line.slice(6);
+        if (data === '[DONE]') continue;
         try {
-          const json = JSON.parse(data)
-          const content = json.choices?.[0]?.delta?.content
-          if (content) yield content
-        } catch {
-        }
+          const json = JSON.parse(data);
+          const content = json.choices?.[0]?.delta?.content;
+          if (content) yield content;
+        } catch {}
       }
     }
   } finally {
-    reader.releaseLock()
+    reader.releaseLock();
   }
 }

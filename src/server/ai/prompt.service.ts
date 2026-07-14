@@ -1,11 +1,12 @@
-import { DocChunk } from '@/shared/types'
-import { buildSystemPrompt } from '@/core/rag'
-import { isDefinitionQuestion, isInconclusiveContext } from './retrieval.service'
+import { buildSystemPrompt } from '@/core/rag';
+import { DocChunk } from '@/shared/types';
+
+import { isDefinitionQuestion, isInconclusiveContext } from './retrieval.service';
 
 export function buildPrompt(params: {
-  question: string
-  documents: DocChunk[]
-  userName?: string
+  question: string;
+  documents: DocChunk[];
+  userName?: string;
 }): string {
   return buildSystemPrompt(params.documents, params.userName, {
     isDefinitionQuestion: isDefinitionQuestion(params.question),
@@ -13,5 +14,5 @@ export function buildPrompt(params: {
       query: params.question,
       relevantDocs: params.documents,
     }),
-  })
+  });
 }

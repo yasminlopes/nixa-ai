@@ -1,19 +1,27 @@
-import { type RefObject } from 'react'
-import { Database } from 'lucide-react'
-import { type MessageType } from '../../types'
-import { ChatMessage } from '../chat-message'
-import { EmptyState } from '../empty-state'
-import styles from './chat-list.module.scss'
+import { Database } from 'lucide-react';
+import { type RefObject } from 'react';
+
+import { type MessageType } from '../../types';
+import { ChatMessage } from '../chat-message';
+import { EmptyState } from '../empty-state';
+
+import styles from './chat-list.module.scss';
 
 interface ChatListProps {
-  messages: MessageType[]
-  isStreaming: boolean
-  docsCount: number | null
-  onSuggest: (q: string) => void
-  bottomRef: RefObject<HTMLDivElement | null>
+  messages: MessageType[];
+  isStreaming: boolean;
+  docsCount: number | null;
+  onSuggest: (q: string) => void;
+  bottomRef: RefObject<HTMLDivElement | null>;
 }
 
-export function ChatList({ messages, isStreaming, docsCount, onSuggest, bottomRef }: ChatListProps) {
+export function ChatList({
+  messages,
+  isStreaming,
+  docsCount,
+  onSuggest,
+  bottomRef,
+}: ChatListProps) {
   return (
     <>
       {docsCount === 0 && (
@@ -22,7 +30,11 @@ export function ChatList({ messages, isStreaming, docsCount, onSuggest, bottomRe
           <span>
             Base sem documentação indexada.{' '}
             <button
-              onClick={() => window.dispatchEvent(new CustomEvent('nixa-open-workspace', { detail: { tab: 'index' } }))}
+              onClick={() =>
+                window.dispatchEvent(
+                  new CustomEvent('nixa-open-workspace', { detail: { tab: 'index' } }),
+                )
+              }
               className={styles.bannerLink}
             >
               Indexar agora
@@ -54,5 +66,5 @@ export function ChatList({ messages, isStreaming, docsCount, onSuggest, bottomRe
         )}
       </div>
     </>
-  )
+  );
 }

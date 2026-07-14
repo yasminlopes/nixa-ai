@@ -1,1 +1,1 @@
-export { OllamaModelsCard } from './ollama-models-card'
+export { OllamaModelsCard } from './ollama-models-card';

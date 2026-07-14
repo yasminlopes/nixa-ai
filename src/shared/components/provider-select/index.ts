@@ -1,1 +1,1 @@
-export { ProviderSelect, type ProviderOption } from './provider-select'
+export { type ProviderOption, ProviderSelect } from './provider-select';

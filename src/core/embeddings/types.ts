@@ -1,7 +1,7 @@
-export type EmbeddingProvider = 'gemini' | 'openai' | 'ollama'
+export type EmbeddingProvider = 'gemini' | 'openai' | 'ollama';
 
 export interface EmbeddingResult {
-  embedding: number[]
-  model: string
-  cached?: boolean
+  embedding: number[];
+  model: string;
+  cached?: boolean;
 }

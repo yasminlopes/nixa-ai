@@ -1,31 +1,34 @@
-'use client'
+'use client';
 
-import { useEffect, useState } from 'react'
-import ReactMarkdown from 'react-markdown'
-import remarkGfm from 'remark-gfm'
-import { ExternalLink, ChevronDown, Link2, Check, Copy } from 'lucide-react'
-import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter'
-import { oneDark } from 'react-syntax-highlighter/dist/esm/styles/prism'
-import clsx from 'clsx'
-import { type MessageType, type Source } from '../../types'
-import { useCopy } from '@/shared/hooks/use-copy'
-import { Avatar } from '@/shared/ui/avatar'
-import { TypingIndicator } from '../typing-indicator'
-import styles from './chat-message.module.scss'
+import clsx from 'clsx';
+import { Check, ChevronDown, Copy, ExternalLink, Link2 } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import ReactMarkdown from 'react-markdown';
+import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
+import { oneDark } from 'react-syntax-highlighter/dist/esm/styles/prism';
+import remarkGfm from 'remark-gfm';
+
+import { useCopy } from '@/shared/hooks/use-copy';
+import { Avatar } from '@/shared/ui/avatar';
+
+import { type MessageType, type Source } from '../../types';
+import { TypingIndicator } from '../typing-indicator';
+
+import styles from './chat-message.module.scss';
 
 interface ChatMessageProps {
-  message: MessageType
-  isStreaming?: boolean
+  message: MessageType;
+  isStreaming?: boolean;
 }
 
 function CodeBlock({ language, code }: { language: string; code: string }) {
-  const [copied, setCopied] = useState(false)
-  const SyntaxHighlighterComponent = SyntaxHighlighter as unknown as React.ComponentType<any>
+  const [copied, setCopied] = useState(false);
+  const SyntaxHighlighterComponent = SyntaxHighlighter as unknown as React.ComponentType<any>;
 
   async function handleCopy() {
-    await navigator.clipboard.writeText(code)
-    setCopied(true)
-    setTimeout(() => setCopied(false), 2000)
+    await navigator.clipboard.writeText(code);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
   }
 
   return (
@@ -46,27 +49,35 @@ function CodeBlock({ language, code }: { language: string; code: string }) {
         PreTag="div"
         wrapLongLines
         customStyle={{
-          margin: 0, borderRadius: 0, fontSize: '0.8rem',
-          maxWidth: '100%', overflowX: 'auto',
-          whiteSpace: 'pre-wrap', wordBreak: 'break-word',
-          background: '#0F1014', color: '#F4F5F8',
+          margin: 0,
+          borderRadius: 0,
+          fontSize: '0.8rem',
+          maxWidth: '100%',
+          overflowX: 'auto',
+          whiteSpace: 'pre-wrap',
+          wordBreak: 'break-word',
+          background: '#0F1014',
+          color: '#F4F5F8',
           fontFamily: 'var(--font-mono), "JetBrains Mono", monospace',
         }}
       >
         {code}
       </SyntaxHighlighterComponent>
     </div>
-  )
+  );
 }
 
 function CopyMessageButton({ text }: { text: string }) {
-  const { copied, copy } = useCopy()
+  const { copied, copy } = useCopy();
 
   async function handleCopy() {
     const clean = text
-      .replace(/\*\*/g, '').replace(/\*/g, '').replace(/`/g, '')
-      .replace(/\[(.+?)\]\(.+?\)/g, '$1').trim()
-    await copy(clean)
+      .replace(/\*\*/g, '')
+      .replace(/\*/g, '')
+      .replace(/`/g, '')
+      .replace(/\[(.+?)\]\(.+?\)/g, '$1')
+      .trim();
+    await copy(clean);
   }
 
   return (
@@ -78,7 +89,7 @@ function CopyMessageButton({ text }: { text: string }) {
       {copied ? <Check size={12} /> : <Copy size={12} />}
       {copied ? 'Copiado' : 'Copiar'}
     </button>
-  )
+  );
 }
 
 function SourcesInline({ sources }: { sources: Source[] }) {
@@ -86,7 +97,9 @@ function SourcesInline({ sources }: { sources: Source[] }) {
     <details className={styles.sources}>
       <summary className={styles.sourcesSummary}>
         <Link2 size={12} style={{ flexShrink: 0 }} />
-        <span>{sources.length} {sources.length === 1 ? 'fonte' : 'fontes'}</span>
+        <span>
+          {sources.length} {sources.length === 1 ? 'fonte' : 'fontes'}
+        </span>
         <ChevronDown className={styles.sourcesChevron} />
       </summary>
       <div className={styles.sourcesList}>
@@ -107,31 +120,40 @@ function SourcesInline({ sources }: { sources: Source[] }) {
         ))}
       </div>
     </details>
-  )
+  );
 }
 
 export function ChatMessage({ message, isStreaming }: ChatMessageProps) {
-  const isUser = message.role === 'user'
-  const [userAvatar, setUserAvatar] = useState<string | null>(null)
-  const [userName, setUserName] = useState('Y')
+  const isUser = message.role === 'user';
+  const [userAvatar, setUserAvatar] = useState<string | null>(null);
+  const [userName, setUserName] = useState('Y');
 
   useEffect(() => {
-    if (!isUser) return
-    setUserAvatar(localStorage.getItem('nixa-user-avatar')?.trim() || null)
-    const storedName = localStorage.getItem('nixa-user-name')?.trim()
-    if (storedName) setUserName(storedName.slice(0, 1).toUpperCase())
-  }, [isUser])
+    if (!isUser) return;
+    setUserAvatar(localStorage.getItem('nixa-user-avatar')?.trim() || null);
+    const storedName = localStorage.getItem('nixa-user-name')?.trim();
+    if (storedName) setUserName(storedName.slice(0, 1).toUpperCase());
+  }, [isUser]);
 
-  const content = message.content
-  const sources = message.sources
-  const unique = sources ? sources.filter((source, index, array) => array.findIndex(other => other.url === source.url) === index) : []
-  const isInterrupted = content === '__interrupted__'
+  const content = message.content;
+  const sources = message.sources;
+  const unique = sources
+    ? sources.filter(
+        (source, index, array) => array.findIndex((other) => other.url === source.url) === index,
+      )
+    : [];
+  const isInterrupted = content === '__interrupted__';
 
   return (
     <div className={clsx(styles.row, isUser ? styles.rowUser : styles.rowAssistant)}>
       {!isUser && <Avatar variant="assistant" size="md" />}
 
-      <div className={clsx(styles.bubbleWrap, isUser ? styles.bubbleWrapUser : styles.bubbleWrapAssistant)}>
+      <div
+        className={clsx(
+          styles.bubbleWrap,
+          isUser ? styles.bubbleWrapUser : styles.bubbleWrapAssistant,
+        )}
+      >
         {isUser ? (
           <div className={styles.userBubble}>
             <div className={styles.userBubbleBody}>
@@ -160,14 +182,20 @@ export function ChatMessage({ message, isStreaming }: ChatMessageProps) {
                   remarkPlugins={[remarkGfm]}
                   components={{
                     code({ className, children, ...props }) {
-                      const match = /language-(\w+)/.exec(className || '')
-                      const code = String(children).replace(/\n$/, '')
-                      return match ? <CodeBlock language={match[1]} code={code} /> : (
-                        <code className={className} {...props}>{children}</code>
-                      )
+                      const match = /language-(\w+)/.exec(className || '');
+                      const code = String(children).replace(/\n$/, '');
+                      return match ? (
+                        <CodeBlock language={match[1]} code={code} />
+                      ) : (
+                        <code className={className} {...props}>
+                          {children}
+                        </code>
+                      );
                     },
                     a: ({ children, href }) => (
-                      <a href={href} target="_blank" rel="noopener noreferrer">{children}</a>
+                      <a href={href} target="_blank" rel="noopener noreferrer">
+                        {children}
+                      </a>
                     ),
                   }}
                 >
@@ -192,5 +220,5 @@ export function ChatMessage({ message, isStreaming }: ChatMessageProps) {
         <Avatar variant="user" src={userAvatar || undefined} fallback={userName} size="md" />
       )}
     </div>
-  )
+  );
 }

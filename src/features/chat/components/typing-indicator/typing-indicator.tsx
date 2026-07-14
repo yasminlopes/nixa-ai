@@ -1,4 +1,4 @@
-import styles from './typing-indicator.module.scss'
+import styles from './typing-indicator.module.scss';
 
 export function TypingIndicator() {
   return (
@@ -7,5 +7,5 @@ export function TypingIndicator() {
       <span className={styles.dot} style={{ animationDelay: '180ms' }} />
       <span className={styles.dot} style={{ animationDelay: '360ms' }} />
     </div>
-  )
+  );
 }

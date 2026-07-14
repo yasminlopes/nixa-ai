@@ -1,11 +1,11 @@
-import { EmbeddingProvider, EmbeddingResult } from './types'
-import { getOpenAIEmbedding } from './openai'
-import { getGeminiEmbedding } from './gemini'
-import { getOllamaEmbedding } from './ollama'
+import { getGeminiEmbedding } from './gemini';
+import { getOllamaEmbedding } from './ollama';
+import { getOpenAIEmbedding } from './openai';
+import { EmbeddingProvider, EmbeddingResult } from './types';
 
 // Versão do schema do índice de embeddings. Suba quando algo que invalida os
 // vetores existentes mudar (modelo default, pré-processamento, etc.).
-export const EMBEDDING_SCHEMA_VERSION = 1
+export const EMBEDDING_SCHEMA_VERSION = 1;
 
 /**
  * Provider de embedding da Nixa — FIXO, independente do LLM de chat escolhido.
@@ -14,27 +14,32 @@ export const EMBEDDING_SCHEMA_VERSION = 1
  * (o histórico do índice). Trocar exige re-indexar.
  */
 export function getIndexingEmbeddingProvider(): EmbeddingProvider {
-  const configuredProvider = process.env.NIXA_EMBEDDING_PROVIDER
-  if (configuredProvider === 'gemini' || configuredProvider === 'openai' || configuredProvider === 'ollama') return configuredProvider
-  return 'gemini'
+  const configuredProvider = process.env.NIXA_EMBEDDING_PROVIDER;
+  if (
+    configuredProvider === 'gemini' ||
+    configuredProvider === 'openai' ||
+    configuredProvider === 'ollama'
+  )
+    return configuredProvider;
+  return 'gemini';
 }
 
 export async function getEmbeddingForProvider(
   provider: EmbeddingProvider,
   text: string,
   apiKey: string,
-  onWarning?: (msg: string) => void
+  onWarning?: (msg: string) => void,
 ): Promise<EmbeddingResult> {
   switch (provider) {
     case 'openai':
-      return getOpenAIEmbedding(text, apiKey, onWarning)
+      return getOpenAIEmbedding(text, apiKey, onWarning);
     case 'gemini':
-      return getGeminiEmbedding(text, apiKey, onWarning)
+      return getGeminiEmbedding(text, apiKey, onWarning);
     case 'ollama':
-      return getOllamaEmbedding(text, apiKey, onWarning)
+      return getOllamaEmbedding(text, apiKey, onWarning);
     default:
-      throw new Error(`Unknown embedding provider: ${provider}`)
+      throw new Error(`Unknown embedding provider: ${provider}`);
   }
 }
 
-export type { EmbeddingProvider, EmbeddingResult }
+export type { EmbeddingProvider, EmbeddingResult };

@@ -1,11 +1,12 @@
-import { type Provider } from '@/core/providers'
-import { LLMParams, GenerateResult } from './types'
-import { runGeminiChat } from './gemini.provider'
-import { runOpenAIChat } from './openai.provider'
-import { runOllamaChat } from './ollama.provider'
+import { type Provider } from '@/core/providers';
 
-export { extractRetryDelaySeconds } from './gemini.provider'
-export type { LLMParams, GenerateResult } from './types'
+import { runGeminiChat } from './gemini.provider';
+import { runOllamaChat } from './ollama.provider';
+import { runOpenAIChat } from './openai.provider';
+import { GenerateResult, LLMParams } from './types';
+
+export { extractRetryDelaySeconds } from './gemini.provider';
+export type { GenerateResult, LLMParams } from './types';
 
 /**
  * Dispara a geração no provider escolhido e devolve sempre a mesma forma
@@ -19,14 +20,14 @@ export type { LLMParams, GenerateResult } from './types'
 export function generate(provider: Provider, params: LLMParams): Promise<GenerateResult> {
   switch (provider) {
     case 'gemini':
-      return runGeminiChat(params)
+      return runGeminiChat(params);
     case 'openai':
-      return Promise.resolve({ stream: runOpenAIChat(params) })
+      return Promise.resolve({ stream: runOpenAIChat(params) });
     case 'ollama':
-      return Promise.resolve({ stream: runOllamaChat(params) })
+      return Promise.resolve({ stream: runOllamaChat(params) });
     default: {
-      const _exhaustive: never = provider
-      throw new Error(`Provider de LLM não suportado: ${_exhaustive}`)
+      const _exhaustive: never = provider;
+      throw new Error(`Provider de LLM não suportado: ${_exhaustive}`);
     }
   }
 }

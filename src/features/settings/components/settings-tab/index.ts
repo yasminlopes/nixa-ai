@@ -1,1 +1,1 @@
-export { SettingsTab } from './settings-tab'
+export { SettingsTab } from './settings-tab';

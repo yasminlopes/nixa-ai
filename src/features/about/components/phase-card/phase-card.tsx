@@ -1,12 +1,13 @@
-import { type LucideIcon } from 'lucide-react'
-import clsx from 'clsx'
-import styles from './phase-card.module.scss'
+import clsx from 'clsx';
+import { type LucideIcon } from 'lucide-react';
+
+import styles from './phase-card.module.scss';
 
 interface Step {
-  icon: LucideIcon
-  title: string
-  desc: string
-  accent?: boolean
+  icon: LucideIcon;
+  title: string;
+  desc: string;
+  accent?: boolean;
 }
 
 export function PhaseCard({
@@ -15,10 +16,10 @@ export function PhaseCard({
   phaseHint,
   steps,
 }: {
-  phaseLabel: string
-  phaseTitle: string
-  phaseHint: string
-  steps: Step[]
+  phaseLabel: string;
+  phaseTitle: string;
+  phaseHint: string;
+  steps: Step[];
 }) {
   return (
     <div className={styles.card}>
@@ -32,7 +33,7 @@ export function PhaseCard({
 
       <ol className={styles.list}>
         {steps.map((step, i) => {
-          const Icon = step.icon
+          const Icon = step.icon;
           return (
             <li key={step.title} className={styles.step}>
               <div className={styles.stepMarker}>
@@ -50,9 +51,9 @@ export function PhaseCard({
                 <p className={styles.stepDesc}>{step.desc}</p>
               </div>
             </li>
-          )
+          );
         })}
       </ol>
     </div>
-  )
+  );
 }

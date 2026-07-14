@@ -14,11 +14,13 @@
   color: var(--color-text-soft);
   border: 1px solid var(--color-border);
   outline: none;
+
   @include transition(all, 0.15s);
 
   &:hover:not(:disabled) {
     background: var(--color-hover);
   }
+
   &:disabled {
     opacity: 0.5;
     cursor: not-allowed;
@@ -30,6 +32,7 @@
   font-size: 12px;
   gap: 6px;
 }
+
 .triggerMd {
   padding: 6px 12px;
   font-size: 13px;
@@ -39,7 +42,9 @@
 .iconWrap {
   width: 14px;
   height: 14px;
+
   @include flex-center;
+
   flex-shrink: 0;
 }
 
@@ -50,6 +55,7 @@
   color: var(--color-text-muted);
   transition: transform 0.15s;
 }
+
 .chevronOpen {
   transform: rotate(180deg);
 }
@@ -65,7 +71,9 @@
   overflow: hidden;
   background: var(--color-surface);
   border: 1px solid var(--color-border);
-  box-shadow: 0 12px 24px -6px rgba(58, 55, 47, 0.12), 0 4px 8px -4px rgba(58, 55, 47, 0.08);
+  box-shadow:
+    0 12px 24px -6px rgb(58 55 47 / 12%),
+    0 4px 8px -4px rgb(58 55 47 / 8%);
   animation: fadeIn 0.15s ease-in-out forwards;
 }
 
@@ -73,6 +81,7 @@
   from {
     opacity: 0;
   }
+
   to {
     opacity: 1;
   }
@@ -86,9 +95,10 @@
   padding: 10px 12px;
   text-align: left;
   background: transparent;
+
   @include transition(background-color);
 
-  &:hover:not(.optionDisabled):not(.optionSelected) {
+  &:hover:not(.optionDisabled, .optionSelected) {
     background: var(--color-hover);
   }
 }
@@ -105,7 +115,9 @@
 .optionIconWrap {
   width: 16px;
   height: 16px;
+
   @include flex-center;
+
   flex-shrink: 0;
 }
 
@@ -121,6 +133,7 @@
   line-height: 1.2;
   color: var(--color-text);
 }
+
 .optionLabelSelected {
   color: var(--color-accent-deep);
 }

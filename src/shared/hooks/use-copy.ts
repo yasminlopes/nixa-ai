@@ -1,14 +1,14 @@
-import { useState, useCallback } from 'react'
+import { useCallback, useState } from 'react';
 
 interface UseCopyOptions {
-  timeout?: number
+  timeout?: number;
 }
 
 interface UseCopyReturn {
-  copied: boolean
-  error: Error | null
-  copy: (text: string) => Promise<void>
-  reset: () => void
+  copied: boolean;
+  error: Error | null;
+  copy: (text: string) => Promise<void>;
+  reset: () => void;
 }
 
 /**
@@ -17,35 +17,33 @@ interface UseCopyReturn {
  * @returns { copied, error, copy, reset }
  */
 export function useCopy(options?: UseCopyOptions): UseCopyReturn {
-  const { timeout = 2000 } = options || {}
-  const [copied, setCopied] = useState(false)
-  const [error, setError] = useState<Error | null>(null)
+  const { timeout = 2000 } = options || {};
+  const [copied, setCopied] = useState(false);
+  const [error, setError] = useState<Error | null>(null);
 
   const copy = useCallback(
     async (text: string) => {
       try {
-        setError(null)
-        await navigator.clipboard.writeText(text)
-        setCopied(true)
+        setError(null);
+        await navigator.clipboard.writeText(text);
+        setCopied(true);
 
-        const timer = setTimeout(() => {
-          setCopied(false)
-        }, timeout)
-
-        return undefined
+        setTimeout(() => {
+          setCopied(false);
+        }, timeout);
       } catch (err) {
-        const error = err instanceof Error ? err : new Error('Falha ao copiar')
-        setError(error)
-        setCopied(false)
+        const error = err instanceof Error ? err : new Error('Falha ao copiar');
+        setError(error);
+        setCopied(false);
       }
     },
-    [timeout]
-  )
+    [timeout],
+  );
 
   const reset = useCallback(() => {
-    setCopied(false)
-    setError(null)
-  }, [])
+    setCopied(false);
+    setError(null);
+  }, []);
 
-  return { copied, error, copy, reset }
+  return { copied, error, copy, reset };
 }

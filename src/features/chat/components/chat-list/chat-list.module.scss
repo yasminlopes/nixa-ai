@@ -14,6 +14,7 @@
 .bannerLink {
   text-decoration: underline;
   text-underline-offset: 2px;
+
   @include transition(opacity);
 
   &:hover {
@@ -30,12 +31,14 @@
   font-size: 10.5px;
   letter-spacing: 0.02em;
   color: var(--color-text-muted);
+
   @include font-mono;
 }
 
 .scrollArea {
   flex: 1;
   overflow-y: auto;
+
   @include scrollbar-thin;
 }
 

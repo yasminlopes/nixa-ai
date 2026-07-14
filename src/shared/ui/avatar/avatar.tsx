@@ -1,15 +1,16 @@
-import { type ReactNode } from 'react'
-import clsx from 'clsx'
-import styles from './avatar.module.scss'
+import clsx from 'clsx';
+import { type ReactNode } from 'react';
 
-export type AvatarSize = 'sm' | 'md' | 'lg' | 'xl'
+import styles from './avatar.module.scss';
+
+export type AvatarSize = 'sm' | 'md' | 'lg' | 'xl';
 
 export interface AvatarProps {
-  variant: 'user' | 'assistant'
-  src?: string
-  fallback?: ReactNode
-  className?: string
-  size?: AvatarSize
+  variant: 'user' | 'assistant';
+  src?: string;
+  fallback?: ReactNode;
+  className?: string;
+  size?: AvatarSize;
 }
 
 export function Avatar({ variant, src, fallback, className, size = 'md' }: AvatarProps) {
@@ -25,12 +26,12 @@ export function Avatar({ variant, src, fallback, className, size = 'md' }: Avata
           className={styles.media}
         />
       </div>
-    )
+    );
   }
 
   return (
     <div className={clsx(styles.avatar, styles.user, styles[size], className)}>
       {src ? <img src={src} alt="" className={styles.media} /> : fallback || 'Y'}
     </div>
-  )
+  );
 }

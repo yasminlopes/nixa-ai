@@ -1,1 +1,1 @@
-export { IndexTab } from './index-tab'
+export { IndexTab } from './index-tab';

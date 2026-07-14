@@ -1,14 +1,15 @@
-import { type ReactNode } from 'react'
-import styles from './section.module.scss'
+import { type ReactNode } from 'react';
+
+import styles from './section.module.scss';
 
 export function Section({
   eyebrow,
   title,
   children,
 }: {
-  eyebrow: string
-  title: string
-  children: ReactNode
+  eyebrow: string;
+  title: string;
+  children: ReactNode;
 }) {
   return (
     <section className={styles.section}>
@@ -18,5 +19,5 @@ export function Section({
       </div>
       {children}
     </section>
-  )
+  );
 }

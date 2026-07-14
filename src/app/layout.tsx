@@ -1,28 +1,31 @@
-import type { Metadata } from 'next'
-import { Inter, Bricolage_Grotesque, JetBrains_Mono } from 'next/font/google'
-import './globals.scss'
-import { AppProviders } from '@/shared/providers/app-provider'
-import { themeScript } from '@/shared/theme/theme-script'
-import styles from './layout.module.scss'
+import type { Metadata } from 'next';
+
+import { Bricolage_Grotesque, Inter, JetBrains_Mono } from 'next/font/google';
+
+import { AppProviders } from '@/shared/providers/app-provider';
+import { themeScript } from '@/shared/theme/theme-script';
+
+import './globals.scss';
+import styles from './layout.module.scss';
 
 const inter = Inter({
   subsets: ['latin'],
   variable: '--font-sans',
   display: 'swap',
-})
+});
 
 const display = Bricolage_Grotesque({
   subsets: ['latin'],
   variable: '--font-display',
   weight: ['400', '500', '600', '700'],
   display: 'swap',
-})
+});
 
 const mono = JetBrains_Mono({
   subsets: ['latin'],
   variable: '--font-mono',
   display: 'swap',
-})
+});
 
 export const metadata: Metadata = {
   title: {
@@ -30,12 +33,12 @@ export const metadata: Metadata = {
     template: '%s | Nixa',
   },
   description: 'Assistente especialista em NICE e CXone',
-}
+};
 
 export default function RootLayout({
   children,
 }: Readonly<{
-  children: React.ReactNode
+  children: React.ReactNode;
 }>) {
   return (
     <html
@@ -50,5 +53,5 @@ export default function RootLayout({
         <AppProviders>{children}</AppProviders>
       </body>
     </html>
-  )
+  );
 }

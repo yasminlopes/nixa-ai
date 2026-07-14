@@ -9,7 +9,8 @@
   border-radius: var(--radius-3xl);
   background: var(--color-surface);
   border: 1px solid var(--color-border);
-  box-shadow: 0 4px 16px -4px rgba(15, 16, 20, 0.06);
+  box-shadow: 0 4px 16px -4px rgb(15 16 20 / 6%);
+
   @include transition(all);
 
   &:focus-within {
@@ -29,6 +30,7 @@
   font-size: 15px;
   color: var(--color-text);
   font-family: var(--font-sans), Inter, sans-serif;
+
   @include scrollbar-thin;
 }
 
@@ -50,6 +52,7 @@
   height: 36px;
   border-radius: var(--radius-full);
   flex-shrink: 0;
+
   @include flex-center;
   @include transition(all);
 }
@@ -71,6 +74,7 @@
     &:hover {
       transform: scale(1.05);
     }
+
     &:active {
       transform: scale(0.95);
     }

@@ -1,169 +1,208 @@
-'use client'
+'use client';
 
-import { useEffect, useRef, useState } from 'react'
-import { useRouter } from 'next/navigation'
-import {
-  AlertTriangle,
-  CheckCircle2,
-  Info,
-  Database,
-  ArrowRight,
-  ChevronLeft,
-} from 'lucide-react'
-import clsx from 'clsx'
-import { ProviderIcon } from '@/shared/components/provider-icon'
-import { useIsHosted } from '@/shared/hooks/use-is-hosted'
-import { getStoredProvider, saveStoredProvider } from '@/shared/utils/llm-settings-storage'
-import { getKeyStatus } from '@/shared/utils/api-key-storage'
-import { type Provider } from '@/core/providers'
-import styles from './index.module.scss'
+import clsx from 'clsx';
+import { AlertTriangle, ArrowRight, CheckCircle2, ChevronLeft, Database, Info } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+
+import { useRouter } from 'next/navigation';
+
+import { type Provider } from '@/core/providers';
+import { ProviderIcon } from '@/shared/components/provider-icon';
+import { useIsHosted } from '@/shared/hooks/use-is-hosted';
+import { getKeyStatus } from '@/shared/utils/api-key-storage';
+import { getStoredProvider, saveStoredProvider } from '@/shared/utils/llm-settings-storage';
+
+import styles from './index.module.scss';
 
 const PROVIDERS: Array<{ id: Provider; label: string; description: string }> = [
-  { id: 'gemini', label: 'Gemini',  description: 'Rápido e estável, ideal para uso geral. Tier gratuito disponível.' },
-  { id: 'openai', label: 'OpenAI',  description: 'Respostas amplas e consistentes.' },
-  { id: 'ollama', label: 'Ollama',  description: 'Roda 100% local, sem chave nem custo. Exige Ollama instalado e o projeto rodando na sua máquina.' },
-]
+  {
+    id: 'gemini',
+    label: 'Gemini',
+    description: 'Rápido e estável, ideal para uso geral. Tier gratuito disponível.',
+  },
+  { id: 'openai', label: 'OpenAI', description: 'Respostas amplas e consistentes.' },
+  {
+    id: 'ollama',
+    label: 'Ollama',
+    description:
+      'Roda 100% local, sem chave nem custo. Exige Ollama instalado e o projeto rodando na sua máquina.',
+  },
+];
 
-const STEPS = ['Boas-vindas', 'Seu nome', 'Indexação', 'Modelo', 'Pronto']
+const STEPS = ['Boas-vindas', 'Seu nome', 'Indexação', 'Modelo', 'Pronto'];
 
 export function OnboardingView() {
-  const router = useRouter()
+  const router = useRouter();
 
-  const [step, setStep] = useState(0)
-  const [name, setName] = useState('')
+  const [step, setStep] = useState(0);
+  const [name, setName] = useState('');
 
-  const [docsCount, setDocsCount] = useState<number | null>(null)
-  const [checkingDocs, setCheckingDocs] = useState(false)
-  const [showIndexInfo, setShowIndexInfo] = useState(false)
+  const [docsCount, setDocsCount] = useState<number | null>(null);
+  const [checkingDocs, setCheckingDocs] = useState(false);
+  const [showIndexInfo, setShowIndexInfo] = useState(false);
 
-  const [provider, setProvider] = useState<Provider>('gemini')
+  const [provider, setProvider] = useState<Provider>('gemini');
   const [hasKeys, setHasKeys] = useState<Record<Provider, boolean>>({
-    gemini: false, openai: false, ollama: true,
-  })
-  const [error, setError] = useState<string | null>(null)
-  const [ready, setReady] = useState(false)
-  const [isTyping, setIsTyping] = useState(false)
-  const [scanPhase, setScanPhase] = useState<'idle' | 'scanning' | 'done'>('idle')
-  const [scanTick, setScanTick] = useState(0)
-  const [finalChecklistProgress, setFinalChecklistProgress] = useState(0)
+    gemini: false,
+    openai: false,
+    ollama: true,
+  });
+  const [error, setError] = useState<string | null>(null);
+  const [ready, setReady] = useState(false);
+  const [isTyping, setIsTyping] = useState(false);
+  const [scanPhase, setScanPhase] = useState<'idle' | 'scanning' | 'done'>('idle');
+  const [scanTick, setScanTick] = useState(0);
+  const [finalChecklistProgress, setFinalChecklistProgress] = useState(0);
 
-  const nameInputRef = useRef<HTMLInputElement>(null)
-  const isHosted = useIsHosted()
-  const visibleProviders = isHosted ? PROVIDERS.filter(item => item.id !== 'ollama') : PROVIDERS
-
-  useEffect(() => {
-    const done = localStorage.getItem('nixa-onboarding-v1') === 'done'
-    if (done) { router.replace('/'); return }
-    const storedName = localStorage.getItem('nixa-user-name')
-    if (storedName) setName(storedName)
-    refreshDocsStatus()
-    loadSettings()
-    setReady(true)
-  }, [router])
+  const nameInputRef = useRef<HTMLInputElement>(null);
+  const isHosted = useIsHosted();
+  const visibleProviders = isHosted ? PROVIDERS.filter((item) => item.id !== 'ollama') : PROVIDERS;
 
   useEffect(() => {
-    if (step === 1) nameInputRef.current?.focus()
-  }, [step])
+    const done = localStorage.getItem('nixa-onboarding-v1') === 'done';
+    if (done) {
+      router.replace('/');
+      return;
+    }
+    const storedName = localStorage.getItem('nixa-user-name');
+    if (storedName) setName(storedName);
+    void refreshDocsStatus();
+    loadSettings();
+    setReady(true);
+  }, [router]);
 
   useEffect(() => {
-    if (isHosted && provider === 'ollama') setProvider('gemini')
-  }, [isHosted, provider])
+    if (step === 1) nameInputRef.current?.focus();
+  }, [step]);
 
   useEffect(() => {
-    if (step === 2) void runIndexQuickScan()
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [step])
+    if (isHosted && provider === 'ollama') setProvider('gemini');
+  }, [isHosted, provider]);
 
   useEffect(() => {
-    let cancelled = false
+    if (step === 2) void runIndexQuickScan();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [step]);
+
+  useEffect(() => {
+    let cancelled = false;
     async function runFinalChecklist() {
-      if (step !== 4) return
-      setFinalChecklistProgress(0)
+      if (step !== 4) return;
+      setFinalChecklistProgress(0);
       for (let i = 1; i <= 3; i++) {
-        await wait(400)
-        if (cancelled) return
-        setFinalChecklistProgress(i)
+        await wait(400);
+        if (cancelled) return;
+        setFinalChecklistProgress(i);
       }
     }
-    void runFinalChecklist()
-    return () => { cancelled = true }
-  }, [step])
+    void runFinalChecklist();
+    return () => {
+      cancelled = true;
+    };
+  }, [step]);
 
   async function refreshDocsStatus() {
-    setCheckingDocs(true)
+    setCheckingDocs(true);
     try {
-      const res = await fetch('/api/index-docs')
-      const data = (await res.json()) as { count: number }
-      setDocsCount(data.count ?? 0)
-    } catch { setDocsCount(0) }
-    finally { setCheckingDocs(false) }
+      const res = await fetch('/api/index-docs');
+      const data = (await res.json()) as { count: number };
+      setDocsCount(data.count ?? 0);
+    } catch {
+      setDocsCount(0);
+    } finally {
+      setCheckingDocs(false);
+    }
   }
 
   function loadSettings() {
-    setProvider(getStoredProvider() ?? 'gemini')
-    setHasKeys(getKeyStatus())
+    setProvider(getStoredProvider() ?? 'gemini');
+    setHasKeys(getKeyStatus());
   }
 
   function persistProviderSelection() {
-    setError(null)
+    setError(null);
     try {
-      saveStoredProvider(provider)
-      return true
+      saveStoredProvider(provider);
+      return true;
     } catch {
-      setError('Falha ao salvar o modelo escolhido.')
-      return false
+      setError('Falha ao salvar o modelo escolhido.');
+      return false;
     }
   }
 
-  function wait(ms: number) { return new Promise(resolve => setTimeout(resolve, ms)) }
+  function wait(ms: number) {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+  }
 
   async function runIndexQuickScan() {
-    setScanPhase('scanning'); setScanTick(0)
-    for (let i = 1; i <= 3; i++) { await wait(260); setScanTick(i) }
-    await refreshDocsStatus()
-    await wait(220)
-    setScanPhase('done')
+    setScanPhase('scanning');
+    setScanTick(0);
+    for (let i = 1; i <= 3; i++) {
+      await wait(260);
+      setScanTick(i);
+    }
+    await refreshDocsStatus();
+    await wait(220);
+    setScanPhase('done');
   }
 
   async function handleContinue() {
-    if (step === 1 && !name.trim()) return
-    if (step === 3) { const ok = await persistProviderSelection(); if (!ok) return }
-    if (step === 4) {
-      localStorage.setItem('nixa-user-name', name.trim())
-      localStorage.setItem('nixa-onboarding-v1', 'done')
-      router.replace('/')
-      return
+    if (step === 1 && !name.trim()) return;
+    if (step === 3) {
+      const ok = await persistProviderSelection();
+      if (!ok) return;
     }
-    setIsTyping(true)
-    await wait(500)
-    setIsTyping(false)
-    setStep(prev => prev + 1)
+    if (step === 4) {
+      localStorage.setItem('nixa-user-name', name.trim());
+      localStorage.setItem('nixa-onboarding-v1', 'done');
+      router.replace('/');
+      return;
+    }
+    setIsTyping(true);
+    await wait(500);
+    setIsTyping(false);
+    setStep((prev) => prev + 1);
   }
 
-  function handleBack() { setStep(prev => Math.max(0, prev - 1)) }
+  function handleBack() {
+    setStep((prev) => Math.max(0, prev - 1));
+  }
 
-  if (!ready) return <div className={styles.loadingScreen} />
+  if (!ready) return <div className={styles.loadingScreen} />;
 
   if (step === 0) {
     return (
       <main className={styles.welcomeMain}>
         <div className={styles.welcomeInner}>
-          <p className={clsx(styles.eyebrow, 'animate-fadeIn')}>
-            — uma assistente em NICE CXone
-          </p>
+          <p className={clsx(styles.eyebrow, 'animate-fadeIn')}>— uma assistente em NICE CXone</p>
 
-          <div className={clsx(styles.logoRow, 'animate-fadeIn')} style={{ animationDelay: '0.05s' }}>
+          <div
+            className={clsx(styles.logoRow, 'animate-fadeIn')}
+            style={{ animationDelay: '0.05s' }}
+          >
             <div className={clsx(styles.logoBox, 'nixa-glow')}>
-              <video src="/assets/nixa-video.mp4" autoPlay muted loop playsInline className={styles.logoVideo} />
+              <video
+                src="/assets/nixa-video.mp4"
+                autoPlay
+                muted
+                loop
+                playsInline
+                className={styles.logoVideo}
+              />
             </div>
           </div>
 
-          <h1 className={clsx(styles.welcomeTitle, 'animate-fadeIn')} style={{ animationDelay: '0.1s' }}>
-            Olá. Sou a{' '}
-            <span className={styles.welcomeTitleAccent}>Nixa</span>.
+          <h1
+            className={clsx(styles.welcomeTitle, 'animate-fadeIn')}
+            style={{ animationDelay: '0.1s' }}
+          >
+            Olá. Sou a <span className={styles.welcomeTitleAccent}>Nixa</span>.
           </h1>
 
-          <p className={clsx(styles.welcomeSubtitle, 'animate-fadeIn')} style={{ animationDelay: '0.2s' }}>
+          <p
+            className={clsx(styles.welcomeSubtitle, 'animate-fadeIn')}
+            style={{ animationDelay: '0.2s' }}
+          >
             Vou te guiar numa configuração rápida para começarmos a trabalhar juntos.
           </p>
 
@@ -176,7 +215,7 @@ export function OnboardingView() {
           </div>
         </div>
       </main>
-    )
+    );
   }
 
   return (
@@ -189,7 +228,7 @@ export function OnboardingView() {
           </div>
           <div className={styles.progressDots}>
             {STEPS.slice(1).map((_, i) => {
-              const idx = i + 1
+              const idx = i + 1;
               return (
                 <div
                   key={idx}
@@ -199,7 +238,7 @@ export function OnboardingView() {
                     background: idx <= step ? 'var(--color-accent)' : 'var(--color-border-strong)',
                   }}
                 />
-              )
+              );
             })}
           </div>
         </div>
@@ -214,8 +253,10 @@ export function OnboardingView() {
               <input
                 ref={nameInputRef}
                 value={name}
-                onChange={e => setName(e.target.value)}
-                onKeyDown={e => { if (e.key === 'Enter') void handleContinue() }}
+                onChange={(e) => setName(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') void handleContinue();
+                }}
                 placeholder="Seu nome"
                 className={styles.nameInput}
               />
@@ -268,15 +309,24 @@ export function OnboardingView() {
                     {docsCount != null && docsCount > 0 ? (
                       <div className={styles.scanResultRow}>
                         <CheckCircle2 size={16} style={{ color: 'var(--color-accent)' }} />
-                        <span>{docsCount.toLocaleString('pt-BR')} chunks indexados — pronto para uso.</span>
+                        <span>
+                          {docsCount.toLocaleString('pt-BR')} chunks indexados — pronto para uso.
+                        </span>
                       </div>
                     ) : (
                       <div className={clsx(styles.scanResultRow, styles.scanResultRowMuted)}>
-                        <AlertTriangle size={16} style={{ marginTop: 2, flexShrink: 0, color: 'var(--color-accent)' }} />
+                        <AlertTriangle
+                          size={16}
+                          style={{ marginTop: 2, flexShrink: 0, color: 'var(--color-accent)' }}
+                        />
                         <span>Sem chunks ainda. Você pode indexar depois nas configurações.</span>
                       </div>
                     )}
-                    <button onClick={refreshDocsStatus} disabled={checkingDocs} className={styles.recheckButton}>
+                    <button
+                      onClick={refreshDocsStatus}
+                      disabled={checkingDocs}
+                      className={styles.recheckButton}
+                    >
                       {checkingDocs ? 'verificando...' : 'verificar de novo'}
                     </button>
                   </>
@@ -289,25 +339,37 @@ export function OnboardingView() {
             <div className={styles.stepBlock}>
               <div>
                 <p className={styles.stepEyebrow}>Quase lá</p>
-                <h2 className={styles.stepTitle} style={{ marginBottom: 12 }}>Escolha o modelo.</h2>
+                <h2 className={styles.stepTitle} style={{ marginBottom: 12 }}>
+                  Escolha o modelo.
+                </h2>
                 <p className={styles.stepSubtitle}>Qual inteligência vai conversar com você?</p>
               </div>
 
               <div className={styles.providerList}>
-                {visibleProviders.map(item => {
-                  const active = provider === item.id
+                {visibleProviders.map((item) => {
+                  const active = provider === item.id;
                   return (
                     <button
                       key={item.id}
                       onClick={() => setProvider(item.id)}
                       className={clsx(styles.providerButton, active && styles.providerButtonActive)}
                     >
-                      <div className={clsx(styles.providerIconWrap, active && styles.providerIconWrapActive)}>
+                      <div
+                        className={clsx(
+                          styles.providerIconWrap,
+                          active && styles.providerIconWrapActive,
+                        )}
+                      >
                         <ProviderIcon provider={item.id} />
                       </div>
                       <div className={styles.providerBody}>
                         <div className={styles.providerLabelRow}>
-                          <span className={clsx(styles.providerLabel, active && styles.providerLabelActive)}>
+                          <span
+                            className={clsx(
+                              styles.providerLabel,
+                              active && styles.providerLabelActive,
+                            )}
+                          >
                             {item.label}
                           </span>
                           {hasKeys[item.id] && (
@@ -318,7 +380,7 @@ export function OnboardingView() {
                       </div>
                       {active && <CheckCircle2 className={styles.providerCheck} />}
                     </button>
-                  )
+                  );
                 })}
               </div>
               {error && <p className={styles.errorText}>{error}</p>}
@@ -335,31 +397,42 @@ export function OnboardingView() {
               </div>
 
               <div className={styles.checklistCard}>
-                {([
+                {[
                   { label: `Nome: ${name}`, status: 'ok' as const },
-                  { label: `Modelo: ${PROVIDERS.find(item => item.id === provider)?.label}`, status: 'ok' as const },
-                  { label: 'Indexação', status: (docsCount && docsCount > 0 ? 'ok' : 'pendente') as 'ok' | 'pendente' },
-                ]).map(({ label, status }, index) => {
-                  const done = finalChecklistProgress >= index + 1
-                  if (!done) return (
-                    <div key={label} className={styles.skeletonRow}>
-                      <div className={styles.skeletonDot} />
-                      <div className={styles.skeletonBar} style={{ width: `${100 + index * 30}px` }} />
-                    </div>
-                  )
-                  const isOk = status === 'ok'
+                  {
+                    label: `Modelo: ${PROVIDERS.find((item) => item.id === provider)?.label}`,
+                    status: 'ok' as const,
+                  },
+                  {
+                    label: 'Indexação',
+                    status: (docsCount && docsCount > 0 ? 'ok' : 'pendente') as 'ok' | 'pendente',
+                  },
+                ].map(({ label, status }, index) => {
+                  const done = finalChecklistProgress >= index + 1;
+                  if (!done)
+                    return (
+                      <div key={label} className={styles.skeletonRow}>
+                        <div className={styles.skeletonDot} />
+                        <div
+                          className={styles.skeletonBar}
+                          style={{ width: `${100 + index * 30}px` }}
+                        />
+                      </div>
+                    );
+                  const isOk = status === 'ok';
                   return (
                     <div key={label} className={styles.checklistRow}>
                       <div className={styles.checklistLeft}>
-                        {isOk
-                          ? <CheckCircle2 className={styles.checklistIcon} />
-                          : <AlertTriangle className={styles.checklistIcon} />
-                        }
+                        {isOk ? (
+                          <CheckCircle2 className={styles.checklistIcon} />
+                        ) : (
+                          <AlertTriangle className={styles.checklistIcon} />
+                        )}
                         {label}
                       </div>
                       <span className={styles.checklistBadge}>{isOk ? 'ok' : 'depois'}</span>
                     </div>
-                  )
+                  );
                 })}
               </div>
 
@@ -384,17 +457,17 @@ export function OnboardingView() {
           <button
             onClick={handleContinue}
             disabled={
-              (step === 1 && !name.trim()) ||
-              isTyping ||
-              (step === 4 && finalChecklistProgress < 3)
+              (step === 1 && !name.trim()) || isTyping || (step === 4 && finalChecklistProgress < 3)
             }
             className={styles.continueButton}
           >
             {step === 4
-              ? finalChecklistProgress < 3 ? 'finalizando…' : 'Começar a usar'
+              ? finalChecklistProgress < 3
+                ? 'finalizando…'
+                : 'Começar a usar'
               : isTyping
-              ? 'aguarde…'
-              : 'Continuar'}
+                ? 'aguarde…'
+                : 'Continuar'}
             {!(step === 4 && finalChecklistProgress < 3) && !isTyping && (
               <ArrowRight className={clsx('w-3.5 h-3.5', styles.arrowIcon)} />
             )}
@@ -410,8 +483,14 @@ export function OnboardingView() {
               <h3 className={styles.infoTitle}>O que é indexação?</h3>
             </div>
             <div className={styles.infoBody}>
-              <p>Indexação é o processo de ler as documentações NICE/CXone, quebrar em partes menores e salvar numa base de busca vetorial.</p>
-              <p>Assim, quando você pergunta algo, a Nixa encontra trechos relevantes e responde com precisão sobre os produtos NICE.</p>
+              <p>
+                Indexação é o processo de ler as documentações NICE/CXone, quebrar em partes menores
+                e salvar numa base de busca vetorial.
+              </p>
+              <p>
+                Assim, quando você pergunta algo, a Nixa encontra trechos relevantes e responde com
+                precisão sobre os produtos NICE.
+              </p>
               <p>Pode usar sem indexar, mas a qualidade das respostas melhora bastante depois.</p>
             </div>
             <div className={styles.infoFooter}>
@@ -423,5 +502,5 @@ export function OnboardingView() {
         </div>
       )}
     </main>
-  )
+  );
 }

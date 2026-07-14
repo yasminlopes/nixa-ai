@@ -1,1 +1,1 @@
-export { ProfileTab } from './profile-tab'
+export { ProfileTab } from './profile-tab';

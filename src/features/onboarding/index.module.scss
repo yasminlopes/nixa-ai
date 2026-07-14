@@ -10,7 +10,9 @@
 
 .welcomeMain {
   min-height: 100vh;
+
   @include flex-center;
+
   padding: 0 24px;
   background: var(--color-bg);
 }
@@ -26,7 +28,9 @@
   letter-spacing: 0.2em;
   text-transform: uppercase;
   margin-bottom: 32px;
+
   @include font-mono;
+
   color: var(--color-accent);
 }
 
@@ -42,7 +46,7 @@
   height: 64px;
   border-radius: var(--radius-2xl);
   overflow: hidden;
-  background: linear-gradient(135deg, #4F7AFF 0%, #A78BFA 100%);
+  background: linear-gradient(135deg, #4f7aff 0%, #a78bfa 100%);
 }
 
 .logoVideo {
@@ -53,6 +57,7 @@
 
 .welcomeTitle {
   @include font-display;
+
   font-weight: var(--font-weight-semibold);
   font-size: 56px;
   line-height: 1.02;
@@ -87,14 +92,17 @@
   font-weight: var(--font-weight-medium);
   background: var(--color-accent);
   color: #fff;
+
   @include transition(all);
 
   &:disabled {
     opacity: 0.6;
   }
+
   &:hover:not(:disabled) {
     transform: scale(1.02);
   }
+
   &:active:not(:disabled) {
     transform: scale(0.98);
   }
@@ -103,6 +111,7 @@
 .arrowIcon {
   transition: transform 0.15s;
 }
+
 .ctaButton:hover .arrowIcon,
 .continueButton:hover .arrowIcon {
   transform: translateX(2px);
@@ -112,7 +121,9 @@
   font-size: 11px;
   margin-top: 12px;
   letter-spacing: 0.02em;
+
   @include font-mono;
+
   color: var(--color-text-muted);
 }
 
@@ -120,7 +131,9 @@
 
 .main {
   min-height: 100vh;
+
   @include flex-center;
+
   padding: 40px 24px;
   background: var(--color-bg);
 }
@@ -145,6 +158,7 @@
 
 .brandName {
   @include font-display;
+
   font-weight: var(--font-weight-semibold);
   font-size: 18px;
   color: var(--color-text);
@@ -154,7 +168,9 @@
   font-size: 10px;
   letter-spacing: 0.18em;
   text-transform: uppercase;
+
   @include font-mono;
+
   color: var(--color-text-muted);
 }
 
@@ -167,12 +183,14 @@
 .progressDot {
   height: 5px;
   border-radius: var(--radius-full);
+
   @include transition(all, 0.3s);
 }
 
 .stepContent {
   min-height: 400px;
 }
+
 .stepContent > * + * {
   margin-top: 32px;
 }
@@ -180,13 +198,19 @@
 .stepBlock {
   animation: fadeIn 0.3s ease-in-out forwards;
 }
+
 .stepBlock > * + * {
   margin-top: 24px;
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
 }
 
 .stepEyebrow {
@@ -194,12 +218,15 @@
   letter-spacing: 0.18em;
   text-transform: uppercase;
   margin-bottom: 12px;
+
   @include font-mono;
+
   color: var(--color-accent);
 }
 
 .stepTitle {
   @include font-display;
+
   font-weight: var(--font-weight-semibold);
   font-size: 42px;
   line-height: 1.05;
@@ -222,7 +249,9 @@
 
 .nameInput {
   width: 100%;
+
   @include font-display;
+
   font-weight: var(--font-weight-medium);
   font-size: 28px;
   background: transparent;
@@ -231,6 +260,7 @@
   border-bottom: 1px solid var(--color-border-strong);
   padding-bottom: 12px;
   color: var(--color-text);
+
   @include transition(border-color);
 
   &:focus {
@@ -251,6 +281,7 @@
   vertical-align: middle;
   border: 1px solid var(--color-border-strong);
   color: var(--color-text-muted);
+
   @include transition(color);
 }
 
@@ -277,7 +308,9 @@
 .scanStatusText {
   font-size: 12px;
   margin-bottom: 16px;
+
   @include font-mono;
+
   color: var(--color-text-muted);
 }
 
@@ -302,6 +335,7 @@
   font-size: 14px;
   color: var(--color-accent-deep);
 }
+
 .scanResultRowMuted {
   align-items: flex-start;
   color: var(--color-text-soft);
@@ -312,9 +346,12 @@
   border-radius: var(--radius-md);
   padding: 6px 12px;
   font-size: 11px;
+
   @include font-mono;
+
   border: 1px solid var(--color-border);
   color: var(--color-text-soft);
+
   @include transition(color);
 
   &:disabled {
@@ -340,8 +377,10 @@
   gap: 12px;
   background: var(--color-surface);
   border: 1px solid var(--color-border);
+
   @include transition(all, 0.2s);
 }
+
 .providerButtonActive {
   background: var(--color-accent-soft);
   border-color: var(--color-accent);
@@ -352,9 +391,12 @@
   height: 36px;
   border-radius: var(--radius-full);
   flex-shrink: 0;
+
   @include flex-center;
+
   background: var(--color-surface-2);
 }
+
 .providerIconWrapActive {
   background: var(--color-surface);
 }
@@ -375,6 +417,7 @@
   font-weight: var(--font-weight-medium);
   color: var(--color-text);
 }
+
 .providerLabelActive {
   color: var(--color-accent-deep);
 }
@@ -385,7 +428,9 @@
   text-transform: uppercase;
   padding: 2px 6px;
   border-radius: var(--radius-full);
+
   @include font-mono;
+
   background: var(--color-surface-2);
   color: var(--color-text-soft);
 }
@@ -406,7 +451,9 @@
 
 .errorText {
   font-size: 13px;
+
   @include font-mono;
+
   color: var(--color-text-soft);
 }
 
@@ -423,8 +470,14 @@
 }
 
 @keyframes pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.5; }
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.5;
+  }
 }
 
 .skeletonRow {
@@ -477,7 +530,9 @@
   text-transform: uppercase;
   padding: 2px 6px;
   border-radius: var(--radius-full);
+
   @include font-mono;
+
   background: var(--color-surface-2);
   color: var(--color-text-soft);
 }
@@ -509,13 +564,17 @@
   border-radius: var(--radius-md);
   padding: 8px 12px;
   font-size: 12px;
+
   @include font-mono;
+
   color: var(--color-text-soft);
+
   @include transition(background-color);
 
   &:disabled {
     opacity: 0.4;
   }
+
   &:hover:not(:disabled) {
     background: var(--color-hover);
   }
@@ -531,15 +590,18 @@
   font-weight: var(--font-weight-medium);
   background: var(--color-accent);
   color: #fff;
+
   @include transition(all);
 
   &:disabled {
     opacity: 0.5;
     cursor: not-allowed;
   }
+
   &:hover:not(:disabled) {
     transform: scale(1.02);
   }
+
   &:active:not(:disabled) {
     transform: scale(0.98);
   }
@@ -551,9 +613,11 @@
   position: fixed;
   inset: 0;
   z-index: 50;
+
   @include flex-center;
+
   padding: 16px;
-  background: rgba(15, 14, 12, 0.45);
+  background: rgb(15 14 12 / 45%);
   backdrop-filter: blur(12px);
 }
 
@@ -564,7 +628,7 @@
   border-radius: var(--radius-2xl);
   background: var(--color-surface);
   border: 1px solid var(--color-border);
-  box-shadow: 0 24px 60px -12px rgba(15, 14, 12, 0.4);
+  box-shadow: 0 24px 60px -12px rgb(15 14 12 / 40%);
   animation: fadeIn 0.3s ease-in-out forwards;
 }
 
@@ -575,6 +639,7 @@
 
 .infoTitle {
   @include font-display;
+
   font-size: 26px;
   color: var(--color-text);
 }
@@ -585,6 +650,7 @@
   line-height: 1.6;
   color: var(--color-text-soft);
 }
+
 .infoBody > * + * {
   margin-top: 12px;
 }
@@ -603,6 +669,7 @@
   font-weight: var(--font-weight-medium);
   background: var(--color-accent);
   color: #fff;
+
   @include transition(opacity);
 
   &:hover {

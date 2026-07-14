@@ -1,1 +1,1 @@
-export { TypingIndicator } from './typing-indicator'
+export { TypingIndicator } from './typing-indicator';

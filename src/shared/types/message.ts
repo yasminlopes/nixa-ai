@@ -1,9 +1,9 @@
-import type { Source } from './source'
+import type { Source } from './source';
 
 export interface Message {
-  id: string
-  role: 'user' | 'assistant'
-  content: string
-  sources?: Source[]
-  createdAt: Date
+  id: string;
+  role: 'user' | 'assistant';
+  content: string;
+  sources?: Source[];
+  createdAt: Date;
 }

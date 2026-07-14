@@ -15,34 +15,34 @@
   --sidebar-width: 280px;
 
   // Superfícies
-  --color-bg: #F4F5F8;
-  --color-bg-elevated: #FAFBFC;
-  --color-surface: #FFFFFF;
-  --color-surface-2: #EDEEF2;
-  --color-surface-3: #E4E6EB;
-  --color-text: #0A0B0E;
-  --color-text-soft: #4A4D57;
-  --color-text-muted: #9CA0AC;
-  --color-border: rgba(15, 16, 20, 0.06);
-  --color-border-strong: rgba(15, 16, 20, 0.10);
-  --color-hover: #EDEEF2;
+  --color-bg: #f4f5f8;
+  --color-bg-elevated: #fafbfc;
+  --color-surface: #fff;
+  --color-surface-2: #edeef2;
+  --color-surface-3: #e4e6eb;
+  --color-text: #0a0b0e;
+  --color-text-soft: #4a4d57;
+  --color-text-muted: #9ca0ac;
+  --color-border: rgb(15 16 20 / 6%);
+  --color-border-strong: rgb(15 16 20 / 10%);
+  --color-hover: #edeef2;
 
   // Accent — electric blue
-  --color-accent: #4F7AFF;
-  --color-accent-hover: #3D63E8;
-  --color-accent-soft: #E8F0FF;
-  --color-accent-deep: #1E3A8A;
+  --color-accent: #4f7aff;
+  --color-accent-hover: #3d63e8;
+  --color-accent-soft: #e8f0ff;
+  --color-accent-deep: #1e3a8a;
 
   // Ink — CTAs pretos puros
-  --color-ink: #0F1014;
-  --color-ink-soft: #1F2027;
-  --color-ink-border: #2E3038;
-  --color-ink-text: #FFFFFF;
-  --color-ink-muted: #9CA0AC;
+  --color-ink: #0f1014;
+  --color-ink-soft: #1f2027;
+  --color-ink-border: #2e3038;
+  --color-ink-text: #fff;
+  --color-ink-muted: #9ca0ac;
 
   // Danger — ações destrutivas
-  --color-danger: #DC2626;
-  --color-danger-hover: #B91C1C;
-  --color-danger-soft: #FEE2E2;
-  --color-danger-deep: #7F1D1D;
+  --color-danger: #dc2626;
+  --color-danger-hover: #b91c1c;
+  --color-danger-soft: #fee2e2;
+  --color-danger-deep: #7f1d1d;
 }

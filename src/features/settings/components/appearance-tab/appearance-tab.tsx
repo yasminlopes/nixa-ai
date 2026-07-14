@@ -1,19 +1,22 @@
-'use client'
+'use client';
 
-import { Sun, Moon, Monitor, Check, type LucideIcon } from 'lucide-react'
-import clsx from 'clsx'
-import { useTheme, type ThemeMode } from '@/shared/contexts/theme-context'
-import { SectionHeader } from '../section-header'
-import styles from './appearance-tab.module.scss'
+import clsx from 'clsx';
+import { Check, type LucideIcon, Monitor, Moon, Sun } from 'lucide-react';
+
+import { type ThemeMode, useTheme } from '@/shared/contexts/theme-context';
+
+import { SectionHeader } from '../section-header';
+
+import styles from './appearance-tab.module.scss';
 
 const OPTIONS: Array<{ id: ThemeMode; label: string; desc: string; icon: LucideIcon }> = [
-  { id: 'light',  label: 'Claro',   desc: 'Sempre usar o modo claro.',            icon: Sun },
-  { id: 'dark',   label: 'Escuro',  desc: 'Ideal para ambientes com pouca luz.',  icon: Moon },
-  { id: 'system', label: 'Sistema', desc: 'Segue a preferência do dispositivo.',  icon: Monitor },
-]
+  { id: 'light', label: 'Claro', desc: 'Sempre usar o modo claro.', icon: Sun },
+  { id: 'dark', label: 'Escuro', desc: 'Ideal para ambientes com pouca luz.', icon: Moon },
+  { id: 'system', label: 'Sistema', desc: 'Segue a preferência do dispositivo.', icon: Monitor },
+];
 
 export function AppearanceTab() {
-  const { mode, theme, setMode } = useTheme()
+  const { mode, theme, setMode } = useTheme();
 
   return (
     <div>
@@ -24,9 +27,9 @@ export function AppearanceTab() {
       />
 
       <div className={styles.options}>
-        {OPTIONS.map(option => {
-          const Icon = option.icon
-          const active = mode === option.id
+        {OPTIONS.map((option) => {
+          const Icon = option.icon;
+          const active = mode === option.id;
           return (
             <button
               key={option.id}
@@ -43,7 +46,7 @@ export function AppearanceTab() {
               </span>
               {active && <Check size={16} className={styles.optionCheck} />}
             </button>
-          )
+          );
         })}
       </div>
 
@@ -68,5 +71,5 @@ export function AppearanceTab() {
         </p>
       </div>
     </div>
-  )
+  );
 }

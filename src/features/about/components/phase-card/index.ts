@@ -1,1 +1,1 @@
-export { PhaseCard } from './phase-card'
+export { PhaseCard } from './phase-card';

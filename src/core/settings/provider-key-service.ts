@@ -1,14 +1,14 @@
-import { type Provider } from '@/core/providers'
+import { type Provider } from '@/core/providers';
 
-export type ApiKeyMap = Partial<Record<Provider, string>>
+export type ApiKeyMap = Partial<Record<Provider, string>>;
 
 export class MissingApiKeyError extends Error {
-  provider: Provider
+  provider: Provider;
 
   constructor(provider: Provider) {
-    super(`Chave da LLM (${provider}) não configurada.`)
-    this.name = 'MissingApiKeyError'
-    this.provider = provider
+    super(`Chave da LLM (${provider}) não configurada.`);
+    this.name = 'MissingApiKeyError';
+    this.provider = provider;
   }
 }
 
@@ -19,9 +19,9 @@ export class MissingApiKeyError extends Error {
  * Ollama é local e não usa chave.
  */
 export function getKeyForProvider(provider: Provider, apiKeys?: ApiKeyMap): string {
-  if (provider === 'ollama') return ''
+  if (provider === 'ollama') return '';
 
-  const key = apiKeys?.[provider]?.trim()
-  if (!key) throw new MissingApiKeyError(provider)
-  return key
+  const key = apiKeys?.[provider]?.trim();
+  if (!key) throw new MissingApiKeyError(provider);
+  return key;
 }

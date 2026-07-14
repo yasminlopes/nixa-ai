@@ -1,19 +1,26 @@
-import { type ReactNode } from 'react'
-import { type LucideIcon } from 'lucide-react'
-import clsx from 'clsx'
-import styles from './callout.module.scss'
+import clsx from 'clsx';
+import { type LucideIcon } from 'lucide-react';
+import { type ReactNode } from 'react';
 
-export type CalloutTone = 'neutral' | 'accent' | 'danger'
+import styles from './callout.module.scss';
+
+export type CalloutTone = 'neutral' | 'accent' | 'danger';
 
 export interface CalloutProps {
-  icon?: LucideIcon
-  tone?: CalloutTone
-  title?: ReactNode
-  children: ReactNode
-  className?: string
+  icon?: LucideIcon;
+  tone?: CalloutTone;
+  title?: ReactNode;
+  children: ReactNode;
+  className?: string;
 }
 
-export function Callout({ icon: Icon, tone = 'neutral', title, children, className }: CalloutProps) {
+export function Callout({
+  icon: Icon,
+  tone = 'neutral',
+  title,
+  children,
+  className,
+}: CalloutProps) {
   return (
     <div className={clsx(styles.callout, styles[tone], className)}>
       {Icon && (
@@ -26,5 +33,5 @@ export function Callout({ icon: Icon, tone = 'neutral', title, children, classNa
         {children}
       </div>
     </div>
-  )
+  );
 }

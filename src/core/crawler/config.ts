@@ -119,7 +119,7 @@ export const SEED_URLS: string[] = [
   'https://help.nicecxone.com/pt-br/content/acd/routing/routing.htm',
   'https://help.nicecxone.com/pt-br/content/acd/channels/additionalchannelfeatures/skills/skills.htm',
   'https://help.nicecxone.com/pt-br/content/recording/managerecordings.htm',
-]
+];
 
 export const ALLOWED_DOMAINS = new Set([
   'help.nicecxone.com',
@@ -133,39 +133,92 @@ export const ALLOWED_DOMAINS = new Set([
   'raw.githubusercontent.com',
   'nice-devone.github.io',
   'www.npmjs.com',
-])
+]);
 
 export const BLOCKED_URL_PATTERNS = [
-  '/account/signin', '/home/login', '/error/', '/notfound',
-  'returnurl=', 'authtype=', '/signup', '/join', '/register',
-  '/login', '/logout', '/settings', '/pulls', '/issues',
-  '/commits/', '/blob/', '/tree/', '/fork',
+  '/account/signin',
+  '/home/login',
+  '/error/',
+  '/notfound',
+  'returnurl=',
+  'authtype=',
+  '/signup',
+  '/join',
+  '/register',
+  '/login',
+  '/logout',
+  '/settings',
+  '/pulls',
+  '/issues',
+  '/commits/',
+  '/blob/',
+  '/tree/',
+  '/fork',
   '/wiki/',
-  '/compare/', '/milestone/', '/labels',
-  'activeTab=dependents', 'activeTab=versions',
-]
+  '/compare/',
+  '/milestone/',
+  '/labels',
+  'activeTab=dependents',
+  'activeTab=versions',
+];
 
 export const ERROR_CONTENT_SIGNALS = [
-  'page not found', '404 not found', 'this page does not exist',
-  'no longer available', 'page has been moved', "we couldn't find that page",
-  'the requested url was not found', 'page cannot be found',
-  'nothing to see here', 'access denied', 'you do not have permission',
-]
+  'page not found',
+  '404 not found',
+  'this page does not exist',
+  'no longer available',
+  'page has been moved',
+  "we couldn't find that page",
+  'the requested url was not found',
+  'page cannot be found',
+  'nothing to see here',
+  'access denied',
+  'you do not have permission',
+];
 
 export const BLOCKED_TITLE_PATTERNS = [
-  'not found', '404', 'error', 'login', 'sign in', 'access denied',
-]
+  'not found',
+  '404',
+  'error',
+  'login',
+  'sign in',
+  'access denied',
+];
 
 export const EXCLUDED_QUERY_PARAMS = [
-  'utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content',
-  'gclid', 'fbclid', 'source', 'ref',
-]
+  'utm_source',
+  'utm_medium',
+  'utm_campaign',
+  'utm_term',
+  'utm_content',
+  'gclid',
+  'fbclid',
+  'source',
+  'ref',
+];
 
 export const BINARY_EXTENSIONS = new Set([
-  '.pdf', '.zip', '.png', '.jpg', '.jpeg', '.svg', '.gif', '.webp',
-  '.mp4', '.mp3', '.woff', '.woff2', '.ttf', '.eot', '.ico',
-  '.js', '.css', '.ts', '.jsx', '.tsx',
-])
+  '.pdf',
+  '.zip',
+  '.png',
+  '.jpg',
+  '.jpeg',
+  '.svg',
+  '.gif',
+  '.webp',
+  '.mp4',
+  '.mp3',
+  '.woff',
+  '.woff2',
+  '.ttf',
+  '.eot',
+  '.ico',
+  '.js',
+  '.css',
+  '.ts',
+  '.jsx',
+  '.tsx',
+]);
 
 export const USER_AGENT =
-  'Mozilla/5.0 (compatible; NixaAI-Indexer/1.0; +https://github.com/nixa-ai)'
+  'Mozilla/5.0 (compatible; NixaAI-Indexer/1.0; +https://github.com/nixa-ai)';

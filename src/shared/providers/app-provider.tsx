@@ -1,7 +1,8 @@
-'use client'
+'use client';
 
-import { type ReactNode } from 'react'
-import { ThemeProvider } from '@/shared/contexts/theme-context'
+import { type ReactNode } from 'react';
+
+import { ThemeProvider } from '@/shared/contexts/theme-context';
 
 /**
  * Agrega os providers globais da aplicação, mantendo o `layout.tsx` "burro".
@@ -16,5 +17,5 @@ import { ThemeProvider } from '@/shared/contexts/theme-context'
  *   </ThemeProvider>
  */
 export function AppProviders({ children }: { children: ReactNode }) {
-  return <ThemeProvider>{children}</ThemeProvider>
+  return <ThemeProvider>{children}</ThemeProvider>;
 }

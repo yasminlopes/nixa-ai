@@ -1,26 +1,28 @@
-'use client'
+'use client';
 
-import { useEffect, useState } from 'react'
-import clsx from 'clsx'
-import styles from './empty-state.module.scss'
+import clsx from 'clsx';
+import { useEffect, useState } from 'react';
+
+import styles from './empty-state.module.scss';
 
 const SUGGESTED = [
   'O que é o CXone e quais são seus principais módulos?',
   'Como autenticar na API REST do CXone?',
   'Como configurar uma fila de atendimento (ACD)?',
   'Quais relatórios estão disponíveis na Reporting API?',
-]
+];
 
 export function EmptyState({ onSuggest }: { onSuggest: (q: string) => void }) {
-  const [userName, setUserName] = useState('')
+  const [userName, setUserName] = useState('');
 
   useEffect(() => {
-    const storedName = localStorage.getItem('nixa-user-name')?.trim()
-    if (storedName) setUserName(storedName)
-  }, [])
+    const storedName = localStorage.getItem('nixa-user-name')?.trim();
+    if (storedName) setUserName(storedName);
+  }, []);
 
-  const hour = new Date().getHours()
-  const greeting = hour < 5 ? 'Boa noite' : hour < 12 ? 'Bom dia' : hour < 18 ? 'Boa tarde' : 'Boa noite'
+  const hour = new Date().getHours();
+  const greeting =
+    hour < 5 ? 'Boa noite' : hour < 12 ? 'Bom dia' : hour < 18 ? 'Boa tarde' : 'Boa noite';
 
   return (
     <div className={styles.wrapper}>
@@ -38,7 +40,8 @@ export function EmptyState({ onSuggest }: { onSuggest: (q: string) => void }) {
       </div>
 
       <h1 className={clsx(styles.title, 'animate-fadeIn')} style={{ animationDelay: '0.05s' }}>
-        {greeting}{userName ? `, ${userName}` : ''}
+        {greeting}
+        {userName ? `, ${userName}` : ''}
       </h1>
 
       <p className={clsx(styles.subtitle, 'animate-fadeIn')} style={{ animationDelay: '0.1s' }}>
@@ -58,5 +61,5 @@ export function EmptyState({ onSuggest }: { onSuggest: (q: string) => void }) {
         ))}
       </div>
     </div>
-  )
+  );
 }

@@ -38,15 +38,18 @@
   font-weight: var(--font-weight-medium);
   background: var(--color-danger);
   color: #fff;
+
   @include transition(all);
 
   &:hover:not(:disabled) {
     opacity: 0.9;
     transform: scale(1.02);
   }
+
   &:active:not(:disabled) {
     transform: scale(0.98);
   }
+
   &:disabled {
     opacity: 0.6;
   }

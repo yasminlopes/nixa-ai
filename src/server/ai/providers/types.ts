@@ -1,10 +1,10 @@
-import { Message } from '@/shared/types'
+import { Message } from '@/shared/types';
 
 export interface LLMParams {
-  apiKey: string
-  systemPrompt: string
-  history: Message[]
-  userMessage: string
+  apiKey: string;
+  systemPrompt: string;
+  history: Message[];
+  userMessage: string;
 }
 
 /**
@@ -14,6 +14,6 @@ export interface LLMParams {
  * antes de conseguir abrir o stream (o `stream` vem vazio nesse caso).
  */
 export interface GenerateResult {
-  stream: AsyncIterable<string>
-  rateLimitError?: unknown
+  stream: AsyncIterable<string>;
+  rateLimitError?: unknown;
 }
