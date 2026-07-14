@@ -25,12 +25,12 @@ O projeto é **multi-LLM**: alterne entre Gemini, OpenAI e Ollama (100% local, s
 
 ## Stack
 
-| Camada | Tecnologias |
-|---|---|
-| **Frontend / API** | Next.js 16 (App Router) · React 19 · TypeScript · SCSS Modules |
-| **LLMs** | Gemini · OpenAI · Ollama |
-| **RAG** | Crawler próprio (Cheerio) · vector store em JSON local · busca híbrida com re-rank · expansão de query PT→EN |
-| **Segurança** | AES-256-GCM para as API keys |
+| Camada             | Tecnologias                                                                                                  |
+| ------------------ | ------------------------------------------------------------------------------------------------------------ |
+| **Frontend / API** | Next.js 16 (App Router) · React 19 · TypeScript · SCSS Modules                                               |
+| **LLMs**           | Gemini · OpenAI · Ollama                                                                                     |
+| **RAG**            | Crawler próprio (Cheerio) · vector store em JSON local · busca híbrida com re-rank · expansão de query PT→EN |
+| **Segurança**      | AES-256-GCM para as API keys                                                                                 |
 
 ---
 
@@ -104,20 +104,20 @@ ollama pull all-minilm
 
 O app **não usa nenhuma variável de ambiente para chaves de API** — elas ficam cifradas no navegador (ver a seção abaixo). Todas as variáveis são opcionais:
 
-| Variável | Descrição |
-|---|---|
+| Variável                  | Descrição                                                                                                      |
+| ------------------------- | -------------------------------------------------------------------------------------------------------------- |
 | `NIXA_EMBEDDING_PROVIDER` | Provider de embedding do índice (`gemini` \| `openai` \| `ollama`). Default `gemini`. Trocar exige re-indexar. |
-| `OLLAMA_BASE_URL` | Default `http://localhost:11434`. |
-| `OLLAMA_MODEL` | Default `llama3.2:1b`. |
-| `RAG_DEBUG` | `true` loga um trace de retrieval por request (query, scores, confiança). |
+| `OLLAMA_BASE_URL`         | Default `http://localhost:11434`.                                                                              |
+| `OLLAMA_MODEL`            | Default `llama3.2:1b`.                                                                                         |
+| `RAG_DEBUG`               | `true` loga um trace de retrieval por request (query, scores, confiança).                                      |
 
 ### Scripts
 
-| Comando | O que faz |
-|---|---|
-| `pnpm dev` | Sobe o app em desenvolvimento. |
-| `pnpm build` | Build de produção. |
-| `pnpm start` | Sobe o build de produção. |
+| Comando      | O que faz                      |
+| ------------ | ------------------------------ |
+| `pnpm dev`   | Sobe o app em desenvolvimento. |
+| `pnpm build` | Build de produção.             |
+| `pnpm start` | Sobe o build de produção.      |
 
 ---
 

@@ -1,11 +1,34 @@
-.next/
+# dependências
 node_modules/
-.env.local
+
+# build / cache
+.next/
+build/
+dist/
+out/
+*.tsbuildinfo
+.eslintcache
+.stylelintcache
+
+# testes / cobertura
+coverage/
+
+# dados gerados em runtime
 data/vectorstore.json
 data/settings.enc.json
+
+# env
+.env
+.env.local
+
+# logs
 *.log
-*.tsbuildinfo
+
+# lockfiles de outros gerenciadores (o projeto usa pnpm)
 bun-lock.*
 yarn.lock
 package-lock.json
-.env
+
+# sistema operacional
+.DS_Store
+Thumbs.db

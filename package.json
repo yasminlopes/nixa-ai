@@ -7,7 +7,29 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "index-docs": "npx tsx scripts/index-docs.ts"
+    "lint": "eslint .",
+    "lint:fix": "eslint --config eslint.config.mjs . --fix",
+    "lint:warns": "eslint . --max-warnings=0",
+    "lint:styles": "stylelint \"src/**/*.{css,scss}\"",
+    "lint:styles:fix": "stylelint \"src/**/*.{css,scss}\" --fix",
+    "format": "prettier . --write",
+    "format:check": "prettier . --check",
+    "type-check": "tsc --noEmit",
+    "knip": "knip",
+    "prepare": "husky"
+  },
+  "lint-staged": {
+    "*.{ts,tsx,js,mjs,cjs}": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "*.{scss,css}": [
+      "stylelint --fix",
+      "prettier --write"
+    ],
+    "*.{json,md,yml,yaml}": [
+      "prettier --write"
+    ]
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.1",
@@ -24,13 +46,28 @@
     "remark-gfm": "^4.0.1"
   },
   "devDependencies": {
+    "@commitlint/cli": "^21.2.1",
+    "@commitlint/config-conventional": "^21.2.0",
+    "@eslint/js": "^9.39.5",
     "@types/node": "^26.1.1",
     "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.3",
     "@types/react-syntax-highlighter": "^15.5.13",
+    "eslint": "^9.39.5",
+    "eslint-config-next": "^16.2.10",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-simple-import-sort": "^13.0.0",
+    "eslint-plugin-unused-imports": "^4.4.1",
+    "husky": "^9.1.7",
+    "knip": "^6.26.0",
+    "lint-staged": "^17.0.8",
+    "prettier": "^3.9.5",
     "sass": "^1.101.0",
-    "tsx": "^4.23.1",
-    "typescript": "6.0.3"
+    "stylelint": "^17.14.0",
+    "stylelint-config-css-modules": "^4.6.0",
+    "stylelint-config-standard-scss": "^17.0.0",
+    "typescript": "6.0.3",
+    "typescript-eslint": "^8.64.0"
   },
   "engines": {
     "node": ">=18",
