@@ -123,7 +123,7 @@ export function AboutView() {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-5 rounded-3xl p-6"
                style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)' }}>
             {[
-              ['Frontend',     'Next.js 14 · App Router · Tailwind'],
+              ['Frontend',     'Next.js 16 · App Router · Tailwind'],
               ['Tipografia',   'Inter · Bricolage Grotesque · JetBrains Mono'],
               ['LLM',          'Gemini · OpenAI · Ollama'],
               ['Embeddings',   'Gemini · OpenAI · Ollama'],

@@ -56,7 +56,7 @@ export function AboutTab() {
         </p>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-[13px]">
           {[
-            ['Frontend',    'Next.js 14 · TypeScript · Tailwind'],
+            ['Frontend',    'Next.js 16 · TypeScript · Tailwind'],
             ['Tipografia',  'Inter · Bricolage Grotesque · JetBrains Mono'],
             ['LLM',         'Gemini · OpenAI · Ollama'],
             ['Embeddings',  'Gemini · OpenAI · Ollama'],

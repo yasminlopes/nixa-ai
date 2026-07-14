@@ -7,3 +7,4 @@ data/vectorstore.json
 bun-lock.*
 yarn.lock
 package-lock.json
+.env

@@ -1,8 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  experimental: {
-    serverComponentsExternalPackages: ['cheerio', '@lancedb/lancedb'],
-  },
+  serverExternalPackages: ['cheerio'],
 }
 
 export default nextConfig

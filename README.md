@@ -12,12 +12,16 @@ O projeto é **multi-LLM**: dá para alternar entre Gemini, OpenAI e Ollama (100
 
 ## Stack
 
-- **Frontend/API**: Next.js 14 (App Router) · TypeScript · Tailwind
+- **Frontend/API**: Next.js 16 (App Router) · React 19 · TypeScript · Tailwind
 - **LLMs**: Gemini · OpenAI · Ollama
 - **RAG**: crawler próprio (Cheerio) · vector store em JSON local · busca híbrida (semântica + léxica) com re-rank · expansão de query PT→EN
 - **Segurança**: API keys criptografadas com AES-256-GCM
 
+> Ollama funciona rodando o projeto localmente (o servidor precisa alcançar o `localhost` da sua máquina). Na versão hospedada, use Gemini ou OpenAI.
+
 ## Como configurar
+
+> Requisitos: Node 18+ e pnpm 9+ (`npm i -g pnpm`). O projeto só aceita instalação via pnpm.
 
 1. Instale as dependências:
 
