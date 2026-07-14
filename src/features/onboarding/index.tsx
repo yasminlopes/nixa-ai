@@ -11,6 +11,7 @@ import {
   ChevronLeft,
 } from 'lucide-react'
 import { ProviderIcon } from '@/shared/components/provider-icon'
+import { useIsHosted } from '@/shared/hooks/use-is-hosted'
 import { type Provider } from '@/core/providers'
 
 type SettingsPayload = {
@@ -50,6 +51,8 @@ export function OnboardingView() {
   const [finalChecklistProgress, setFinalChecklistProgress] = useState(0)
 
   const nameInputRef = useRef<HTMLInputElement>(null)
+  const isHosted = useIsHosted()
+  const visibleProviders = isHosted ? PROVIDERS.filter(p => p.id !== 'ollama') : PROVIDERS
 
   useEffect(() => {
     const done = localStorage.getItem('nixa-onboarding-v1') === 'done'
@@ -64,6 +67,10 @@ export function OnboardingView() {
   useEffect(() => {
     if (step === 1) nameInputRef.current?.focus()
   }, [step])
+
+  useEffect(() => {
+    if (isHosted && provider === 'ollama') setProvider('gemini')
+  }, [isHosted, provider])
 
   useEffect(() => {
     if (step === 2) void runIndexQuickScan()
@@ -433,7 +440,7 @@ export function OnboardingView() {
               </div>
 
               <div className="space-y-2.5">
-                {PROVIDERS.map(item => {
+                {visibleProviders.map(item => {
                   const active = provider === item.id
                   return (
                     <button

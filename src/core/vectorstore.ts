@@ -52,9 +52,13 @@ async function getLocalStore(): Promise<LocalStore> {
 }
 
 async function saveLocalStore(store: LocalStore): Promise<void> {
-  await fs.mkdir(path.dirname(LOCAL_STORE_PATH), { recursive: true })
-  await fs.writeFile(LOCAL_STORE_PATH, JSON.stringify(store, null, 2), 'utf-8')
   _localStore = store
+  try {
+    await fs.mkdir(path.dirname(LOCAL_STORE_PATH), { recursive: true })
+    await fs.writeFile(LOCAL_STORE_PATH, JSON.stringify(store, null, 2), 'utf-8')
+  } catch {
+    // Filesystem read-only (ex: Vercel) — segue só com o cache em memória do processo.
+  }
 }
 
 function cosineSimilarity(a: number[], b: number[]): number {

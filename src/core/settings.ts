@@ -19,6 +19,10 @@ export type PublicLLMSettings = {
 const SETTINGS_PATH = path.join(process.cwd(), 'data', 'llm-settings.json')
 const PROVIDERS: LLMProvider[] = ['gemini', 'openai', 'ollama']
 
+// Fallback em memória para filesystems read-only (ex: Vercel serverless).
+// Não persiste entre cold starts — apenas evita que o save quebre a requisição.
+let memorySettings: EncryptedSettings | null = null
+
 function getCipherKey(): Buffer {
   const secret = process.env.LLM_SETTINGS_MASTER_KEY
   if (!secret) {
@@ -62,13 +66,18 @@ async function readSettings(): Promise<EncryptedSettings | null> {
     const raw = await fs.readFile(SETTINGS_PATH, 'utf-8')
     return JSON.parse(raw) as EncryptedSettings
   } catch {
-    return null
+    return memorySettings
   }
 }
 
 async function writeSettings(settings: EncryptedSettings): Promise<void> {
-  await fs.mkdir(path.dirname(SETTINGS_PATH), { recursive: true })
-  await fs.writeFile(SETTINGS_PATH, JSON.stringify(settings, null, 2), 'utf-8')
+  memorySettings = settings
+  try {
+    await fs.mkdir(path.dirname(SETTINGS_PATH), { recursive: true })
+    await fs.writeFile(SETTINGS_PATH, JSON.stringify(settings, null, 2), 'utf-8')
+  } catch {
+    // Filesystem read-only (ex: Vercel) — segue só com o fallback em memória.
+  }
 }
 
 export async function getPublicLLMSettings(): Promise<PublicLLMSettings> {

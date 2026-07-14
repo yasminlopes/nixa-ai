@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { AlertTriangle, Check, ShieldCheck } from 'lucide-react'
 import { type Provider } from '@/core/providers'
 import { ProviderIcon } from '@/shared/components/provider-icon'
+import { useIsHosted } from '@/shared/hooks/use-is-hosted'
 import { SectionHeader } from './section-header'
 import { OllamaModelsCard } from './ollama-models-card'
 
@@ -96,8 +97,7 @@ export function SettingsTab() {
 
   const current = PROVIDERS.find(p => p.id === defaultProvider)!
   const isOllama = defaultProvider === 'ollama'
-  const isHosted = typeof window !== 'undefined' &&
-    !['localhost', '127.0.0.1', '0.0.0.0'].includes(window.location.hostname)
+  const isHosted = useIsHosted()
   const saveDisabled = loading || saveStatus === 'saving' || saveStatus === 'saved' || !hasChanges
 
   return (

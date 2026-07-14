@@ -2,6 +2,8 @@
 
 Assistente de chat com RAG para a documentação NICE/CXone.
 
+🔗 **Demo:** [nixa-ai.vercel.app](https://nixa-ai.vercel.app)
+
 ## Sobre o projeto
 
 O Nixa AI nasceu para resolver um problema simples: encontrar respostas na documentação do NICE/CXone costuma significar navegar por dezenas de páginas e menus até chegar na informação certa. Aqui, o usuário faz uma pergunta em linguagem natural e recebe uma resposta direta, contextualizada e baseada no conteúdo oficial da plataforma.
@@ -17,7 +19,7 @@ O projeto é **multi-LLM**: dá para alternar entre Gemini, OpenAI e Ollama (100
 - **RAG**: crawler próprio (Cheerio) · vector store em JSON local · busca híbrida (semântica + léxica) com re-rank · expansão de query PT→EN
 - **Segurança**: API keys criptografadas com AES-256-GCM
 
-> Ollama funciona rodando o projeto localmente (o servidor precisa alcançar o `localhost` da sua máquina). Na versão hospedada, use Gemini ou OpenAI.
+> Ollama funciona rodando o projeto localmente (o servidor precisa alcançar o `localhost` da sua máquina). Na [demo hospedada](https://nixa-ai.vercel.app), use Gemini ou OpenAI.
 
 ## Como configurar
 
