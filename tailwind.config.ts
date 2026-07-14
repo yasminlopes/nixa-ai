@@ -1,5 +1,5 @@
 import type { Config } from 'tailwindcss'
-import { palette, radius, shadows, fontFamily, fontSize } from './src/shared/theme'
+import { palette, radius, shadows, fontFamily, fontSize } from './src/core/theme'
 
 const config: Config = {
   content: ['./src/**/*.{js,ts,jsx,tsx,mdx}'],
