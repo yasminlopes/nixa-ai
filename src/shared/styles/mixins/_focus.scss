@@ -1,0 +1,11 @@
+// Nota: usa :global(.dark) em vez de .dark puro porque este mixin é incluído
+// dentro de arquivos .module.scss — sem :global(), o CSS Modules escoparia
+// (hash) o seletor .dark e ele nunca bateria com a classe real aplicada no
+// <html> pelo ThemeContext.
+@mixin focus-ring {
+  box-shadow: 0 0 0 3px rgba(79, 122, 255, 0.18);
+
+  :global(.dark) & {
+    box-shadow: 0 0 0 3px rgba(107, 146, 255, 0.28);
+  }
+}

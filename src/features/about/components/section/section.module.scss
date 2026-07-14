@@ -1,0 +1,27 @@
+@use '../../../../shared/styles/tokens';
+@use '../../../../shared/styles/mixins' as *;
+
+.section {
+  margin-bottom: 56px;
+}
+
+.header {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.eyebrow {
+  font-size: 11px;
+  letter-spacing: 0.15em;
+  @include font-mono;
+  color: var(--color-text-muted);
+}
+
+.title {
+  @include font-display;
+  font-weight: var(--font-weight-semibold);
+  font-size: 28px;
+  color: var(--color-text);
+}

@@ -2,12 +2,13 @@
 
 import { ChatInterface } from '@/features/chat'
 import { Sidebar } from '@/features/sidebar'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Conversation } from '@/shared/types'
 import { PanelLeft, KeyRound, ShieldCheck, ArrowRight, Sparkles } from 'lucide-react'
-import { cn } from '@/shared/utils/cn'
+import clsx from 'clsx'
 import { hasKey } from '@/shared/utils/llm-settings-storage'
+import styles from './index.module.scss'
 
 type GateState = 'loading' | 'key' | 'index' | 'done'
 
@@ -66,24 +67,21 @@ export function HomeView() {
     setRefreshTrigger(t => t + 1)
   }
 
-  if (!checkedOnboarding) return <div className="h-full w-full" style={{ background: 'var(--color-bg)' }} />
+  if (!checkedOnboarding) return <div className={styles.loadingScreen} />
 
   const showGate = gateState === 'key' || gateState === 'index'
 
   return (
-    <div className="flex h-full relative">
+    <div className={styles.root}>
       {mobileSidebarOpen && (
         <button
-          className="fixed inset-0 bg-black/35 z-30 md:hidden"
+          className={styles.mobileOverlay}
           onClick={() => setMobileSidebarOpen(false)}
           aria-label="Fechar menu lateral"
         />
       )}
 
-      <div className={cn(
-        'fixed md:relative inset-y-0 left-0 z-40 transition-transform duration-200',
-        mobileSidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
-      )}>
+      <div className={clsx(styles.sidebarWrap, !mobileSidebarOpen && styles.sidebarWrapClosed)}>
         <Sidebar
           activeId={activeConversationId}
           refreshTrigger={refreshTrigger}
@@ -95,25 +93,16 @@ export function HomeView() {
         />
       </div>
 
-      <main className="flex-1 flex flex-col min-w-0">
-        <div
-          className="md:hidden h-12 px-4 flex items-center"
-          style={{
-            borderBottom: '1px solid var(--color-border)',
-            background: 'var(--color-bg)',
-          }}
-        >
+      <main className={styles.main}>
+        <div className={styles.mobileHeader}>
           <button
             onClick={() => setMobileSidebarOpen(true)}
-            className="w-8 h-8 rounded-md flex items-center justify-center transition-colors"
-            style={{ color: 'var(--color-text-soft)' }}
+            className={styles.mobileMenuButton}
             title="Abrir menu"
           >
-            <PanelLeft className="w-4 h-4" />
+            <PanelLeft size={16} />
           </button>
-          <span className="ml-2 font-display font-semibold text-[18px]" style={{ color: 'var(--color-text)' }}>
-            Nixa
-          </span>
+          <span className={styles.mobileTitle}>Nixa</span>
         </div>
         <ChatInterface
           key={`${activeConversationId ?? 'new'}-${chatKey}`}
@@ -124,15 +113,11 @@ export function HomeView() {
 
       {/* Setup gate */}
       {showGate && (
-        <div
-          className="absolute inset-0 z-20 flex items-center justify-center backdrop-blur-md"
-          style={{ background: 'rgba(15, 14, 12, 0.45)' }}
-        >
-          <div className="w-full max-w-md mx-4 space-y-5">
+        <div className={styles.gateOverlay}>
+          <div className={styles.gateInner}>
 
             {/* Step indicator — editorial */}
-            <div className="flex items-center justify-center gap-3 text-[11px] tracking-[0.15em] uppercase font-mono"
-                 style={{ color: '#F5F2EA' }}>
+            <div className={styles.gateSteps}>
               <span style={{ opacity: gateState === 'key' ? 1 : 0.5 }}>
                 {gateState === 'key' ? '01' : '✓'} Chave
               </span>
@@ -144,54 +129,33 @@ export function HomeView() {
 
             {/* Gate card */}
             {gateState === 'key' && (
-              <button
-                onClick={() => openModal('settings')}
-                className="group w-full text-left rounded-[22px] overflow-hidden transition-all duration-200 hover:scale-[1.01]"
-                style={{
-                  background: 'var(--color-surface)',
-                  border: '1px solid var(--color-border)',
-                  boxShadow: '0 24px 60px -12px rgba(15,14,12,0.5)',
-                }}
-              >
-                <div className="p-6">
-                  <div className="mb-5">
-                    <p
-                      className="text-[10.5px] tracking-[0.18em] uppercase font-mono mb-2"
-                      style={{ color: 'var(--color-accent)' }}
-                    >
-                      Primeiro passo
-                    </p>
-                    <h2 className="font-display font-semibold text-[28px] leading-tight tracking-tight" style={{ color: 'var(--color-text)' }}>
-                      Adicione sua chave.
-                    </h2>
-                    <p className="text-[14px] mt-2 leading-relaxed" style={{ color: 'var(--color-text-soft)' }}>
+              <button onClick={() => openModal('settings')} className={styles.gateCard}>
+                <div className={styles.gateCardBody}>
+                  <div className={styles.gateCardHead}>
+                    <p className={styles.gateEyebrow}>Primeiro passo</p>
+                    <h2 className={styles.gateTitle}>Adicione sua chave.</h2>
+                    <p className={styles.gateDesc}>
                       Gemini (gratuita), OpenAI ou Ollama (local, sem custo) para gerar embeddings e respostas.
                     </p>
                   </div>
 
-                  <div
-                    className="flex items-start gap-2 rounded-[14px] px-3.5 py-3"
-                    style={{ background: 'var(--color-surface-2)', border: '1px solid var(--color-border)' }}
-                  >
-                    <ShieldCheck className="w-3.5 h-3.5 shrink-0 mt-0.5" style={{ color: 'var(--color-accent)' }} />
-                    <p className="text-[12px] leading-relaxed" style={{ color: 'var(--color-text-soft)' }}>
+                  <div className={styles.gateNotice}>
+                    <ShieldCheck className={styles.gateNoticeIcon} />
+                    <p className={styles.gateNoticeText}>
                       Criptografada com{' '}
-                      <span style={{ color: 'var(--color-text)' }} className="font-medium">AES-256-GCM</span>.
+                      <span className={styles.gateNoticeStrong}>AES-256-GCM</span>.
                       Nunca exposta nas respostas.
                     </p>
                   </div>
 
-                  <div className="mt-5 flex items-center justify-between">
-                    <div className="flex items-center gap-1.5 text-[11px] font-mono" style={{ color: 'var(--color-text-muted)' }}>
-                      <KeyRound className="w-3 h-3" />
+                  <div className={styles.gateFooter}>
+                    <div className={styles.gateHint}>
+                      <KeyRound size={12} />
                       Gemini é gratuito
                     </div>
-                    <div
-                      className="flex items-center gap-1.5 rounded-full px-4 py-1.5 text-[12px] font-medium transition-opacity group-hover:opacity-90"
-                      style={{ background: 'var(--color-accent)', color: '#FFFFFF' }}
-                    >
+                    <div className={styles.gateCta}>
                       Configurar
-                      <ArrowRight className="w-3 h-3" />
+                      <ArrowRight size={12} />
                     </div>
                   </div>
                 </div>
@@ -199,50 +163,27 @@ export function HomeView() {
             )}
 
             {gateState === 'index' && (
-              <button
-                onClick={() => openModal('index')}
-                className="group w-full text-left rounded-[22px] overflow-hidden transition-all duration-200 hover:scale-[1.01]"
-                style={{
-                  background: 'var(--color-surface)',
-                  border: '1px solid var(--color-border)',
-                  boxShadow: '0 24px 60px -12px rgba(15,14,12,0.5)',
-                }}
-              >
-                <div className="p-6">
-                  <div className="mb-5">
-                    <p
-                      className="text-[10.5px] tracking-[0.18em] uppercase font-mono mb-2"
-                      style={{ color: 'var(--color-accent)' }}
-                    >
-                      Quase lá
-                    </p>
-                    <h2 className="font-display font-semibold text-[28px] leading-tight tracking-tight" style={{ color: 'var(--color-text)' }}>
-                      Indexe a documentação.
-                    </h2>
-                    <p className="text-[14px] mt-2 leading-relaxed" style={{ color: 'var(--color-text-soft)' }}>
+              <button onClick={() => openModal('index')} className={styles.gateCard}>
+                <div className={styles.gateCardBody}>
+                  <div className={styles.gateCardHead}>
+                    <p className={styles.gateEyebrow}>Quase lá</p>
+                    <h2 className={styles.gateTitle}>Indexe a documentação.</h2>
+                    <p className={styles.gateDesc}>
                       Chave configurada. Agora a Nixa precisa absorver as docs NICE/CXone para começar a responder.
                     </p>
                   </div>
 
-                  <div
-                    className="flex items-start gap-2 rounded-[14px] px-3.5 py-3"
-                    style={{ background: 'var(--color-surface-2)', border: '1px solid var(--color-border)' }}
-                  >
-                    <ShieldCheck className="w-3.5 h-3.5 shrink-0 mt-0.5" style={{ color: 'var(--color-accent)' }} />
-                    <p className="text-[12px] leading-relaxed" style={{ color: 'var(--color-text-soft)' }}>
+                  <div className={styles.gateNotice}>
+                    <ShieldCheck className={styles.gateNoticeIcon} />
+                    <p className={styles.gateNoticeText}>
                       URLs já indexadas são puladas — sem reprocessar o que já existe.
                     </p>
                   </div>
 
-                  <div className="mt-5 flex items-center justify-between">
-                    <span className="text-[11px] font-mono" style={{ color: 'var(--color-text-muted)' }}>
-                      pode levar alguns minutos
-                    </span>
-                    <div
-                      className="flex items-center gap-1.5 rounded-full px-4 py-1.5 text-[12px] font-medium transition-opacity group-hover:opacity-90"
-                      style={{ background: 'var(--color-accent)', color: '#FFFFFF' }}
-                    >
-                      <Sparkles className="w-3 h-3" />
+                  <div className={styles.gateFooter}>
+                    <span className={styles.gateHint}>pode levar alguns minutos</span>
+                    <div className={styles.gateCta}>
+                      <Sparkles size={12} />
                       Indexar
                     </div>
                   </div>

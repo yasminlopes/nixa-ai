@@ -1,0 +1,612 @@
+@use '../../shared/styles/tokens';
+@use '../../shared/styles/mixins' as *;
+
+.loadingScreen {
+  height: 100vh;
+  width: 100%;
+  background: var(--color-bg);
+}
+
+// ─── Step 0 — Welcome ────────────────────────────────────────────────────
+
+.welcomeMain {
+  min-height: 100vh;
+  @include flex-center;
+  padding: 0 24px;
+  background: var(--color-bg);
+}
+
+.welcomeInner {
+  max-width: 576px;
+  width: 100%;
+  text-align: left;
+}
+
+.eyebrow {
+  font-size: 11px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  margin-bottom: 32px;
+  @include font-mono;
+  color: var(--color-accent);
+}
+
+.logoRow {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.logoBox {
+  width: 64px;
+  height: 64px;
+  border-radius: var(--radius-2xl);
+  overflow: hidden;
+  background: linear-gradient(135deg, #4F7AFF 0%, #A78BFA 100%);
+}
+
+.logoVideo {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.welcomeTitle {
+  @include font-display;
+  font-weight: var(--font-weight-semibold);
+  font-size: 56px;
+  line-height: 1.02;
+  margin-bottom: 24px;
+  color: var(--color-text);
+
+  @include sm-up {
+    font-size: 72px;
+  }
+}
+
+.welcomeTitleAccent {
+  color: var(--color-accent);
+}
+
+.welcomeSubtitle {
+  font-family: var(--font-family-sans);
+  font-size: 20px;
+  line-height: 1.6;
+  max-width: 448px;
+  margin-bottom: 48px;
+  color: var(--color-text-soft);
+}
+
+.ctaButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border-radius: var(--radius-full);
+  padding: 12px 28px;
+  font-size: 14px;
+  font-weight: var(--font-weight-medium);
+  background: var(--color-accent);
+  color: #fff;
+  @include transition(all);
+
+  &:disabled {
+    opacity: 0.6;
+  }
+  &:hover:not(:disabled) {
+    transform: scale(1.02);
+  }
+  &:active:not(:disabled) {
+    transform: scale(0.98);
+  }
+}
+
+.arrowIcon {
+  transition: transform 0.15s;
+}
+.ctaButton:hover .arrowIcon,
+.continueButton:hover .arrowIcon {
+  transform: translateX(2px);
+}
+
+.ctaHint {
+  font-size: 11px;
+  margin-top: 12px;
+  letter-spacing: 0.02em;
+  @include font-mono;
+  color: var(--color-text-muted);
+}
+
+// ─── Steps 1–4 shell ─────────────────────────────────────────────────────
+
+.main {
+  min-height: 100vh;
+  @include flex-center;
+  padding: 40px 24px;
+  background: var(--color-bg);
+}
+
+.container {
+  width: 100%;
+  max-width: 672px;
+}
+
+.progressRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 40px;
+}
+
+.progressLeft {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.brandName {
+  @include font-display;
+  font-weight: var(--font-weight-semibold);
+  font-size: 18px;
+  color: var(--color-text);
+}
+
+.brandStatus {
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  @include font-mono;
+  color: var(--color-text-muted);
+}
+
+.progressDots {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.progressDot {
+  height: 5px;
+  border-radius: var(--radius-full);
+  @include transition(all, 0.3s);
+}
+
+.stepContent {
+  min-height: 400px;
+}
+.stepContent > * + * {
+  margin-top: 32px;
+}
+
+.stepBlock {
+  animation: fadeIn 0.3s ease-in-out forwards;
+}
+.stepBlock > * + * {
+  margin-top: 24px;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.stepEyebrow {
+  font-size: 10.5px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+  @include font-mono;
+  color: var(--color-accent);
+}
+
+.stepTitle {
+  @include font-display;
+  font-weight: var(--font-weight-semibold);
+  font-size: 42px;
+  line-height: 1.05;
+  color: var(--color-text);
+
+  @include sm-up {
+    font-size: 54px;
+  }
+}
+
+.stepSubtitle {
+  font-family: var(--font-family-sans);
+  font-size: 18px;
+  line-height: 1.6;
+  max-width: 448px;
+  color: var(--color-text-soft);
+}
+
+// ─── Step 1 — name ───────────────────────────────────────────────────────
+
+.nameInput {
+  width: 100%;
+  @include font-display;
+  font-weight: var(--font-weight-medium);
+  font-size: 28px;
+  background: transparent;
+  outline: none;
+  border: none;
+  border-bottom: 1px solid var(--color-border-strong);
+  padding-bottom: 12px;
+  color: var(--color-text);
+  @include transition(border-color);
+
+  &:focus {
+    border-color: var(--color-accent);
+  }
+}
+
+// ─── Step 2 — scan ───────────────────────────────────────────────────────
+
+.infoButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: var(--radius-full);
+  margin-left: 8px;
+  vertical-align: middle;
+  border: 1px solid var(--color-border-strong);
+  color: var(--color-text-muted);
+  @include transition(color);
+}
+
+.scanCard {
+  border-radius: var(--radius-2xl);
+  padding: 20px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+}
+
+.scanHeader {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.scanHeaderText {
+  font-size: 13px;
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text);
+}
+
+.scanStatusText {
+  font-size: 12px;
+  margin-bottom: 16px;
+  @include font-mono;
+  color: var(--color-text-muted);
+}
+
+.progressBarTrack {
+  height: 4px;
+  border-radius: var(--radius-full);
+  overflow: hidden;
+  background: var(--color-surface-2);
+}
+
+.progressBarFill {
+  height: 100%;
+  border-radius: var(--radius-full);
+  background: var(--color-accent);
+  transition: width 0.3s;
+}
+
+.scanResultRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  color: var(--color-accent-deep);
+}
+.scanResultRowMuted {
+  align-items: flex-start;
+  color: var(--color-text-soft);
+}
+
+.recheckButton {
+  margin-top: 12px;
+  border-radius: var(--radius-md);
+  padding: 6px 12px;
+  font-size: 11px;
+  @include font-mono;
+  border: 1px solid var(--color-border);
+  color: var(--color-text-soft);
+  @include transition(color);
+
+  &:disabled {
+    opacity: 0.5;
+  }
+}
+
+// ─── Step 3 — provider ───────────────────────────────────────────────────
+
+.providerList {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.providerButton {
+  width: 100%;
+  border-radius: var(--radius-lg);
+  padding: 16px;
+  text-align: left;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  @include transition(all, 0.2s);
+}
+.providerButtonActive {
+  background: var(--color-accent-soft);
+  border-color: var(--color-accent);
+}
+
+.providerIconWrap {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-full);
+  flex-shrink: 0;
+  @include flex-center;
+  background: var(--color-surface-2);
+}
+.providerIconWrapActive {
+  background: var(--color-surface);
+}
+
+.providerBody {
+  flex: 1;
+  min-width: 0;
+}
+
+.providerLabelRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.providerLabel {
+  font-size: 14px;
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text);
+}
+.providerLabelActive {
+  color: var(--color-accent-deep);
+}
+
+.providerReadyBadge {
+  font-size: 9.5px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  padding: 2px 6px;
+  border-radius: var(--radius-full);
+  @include font-mono;
+  background: var(--color-surface-2);
+  color: var(--color-text-soft);
+}
+
+.providerDesc {
+  font-size: 12px;
+  margin-top: 2px;
+  line-height: 1.4;
+  color: var(--color-text-soft);
+}
+
+.providerCheck {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  color: var(--color-accent);
+}
+
+.errorText {
+  font-size: 13px;
+  @include font-mono;
+  color: var(--color-text-soft);
+}
+
+// ─── Step 4 — final ──────────────────────────────────────────────────────
+
+.checklistCard {
+  border-radius: var(--radius-2xl);
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+.skeletonRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 0;
+}
+
+.skeletonDot {
+  width: 14px;
+  height: 14px;
+  border-radius: var(--radius-full);
+  background: var(--color-surface-2);
+  animation: pulse 2s ease-in-out infinite;
+}
+
+.skeletonBar {
+  height: 12px;
+  border-radius: 4px;
+  background: var(--color-surface-2);
+  animation: pulse 2s ease-in-out infinite;
+}
+
+.checklistRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.checklistLeft {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13.5px;
+  color: var(--color-text);
+}
+
+.checklistIcon {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  color: var(--color-accent);
+}
+
+.checklistBadge {
+  font-size: 10px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  padding: 2px 6px;
+  border-radius: var(--radius-full);
+  @include font-mono;
+  background: var(--color-surface-2);
+  color: var(--color-text-soft);
+}
+
+.finalNote {
+  font-family: var(--font-family-sans);
+  font-size: 18px;
+  line-height: 1.6;
+  max-width: 448px;
+  color: var(--color-text-soft);
+  animation: fadeIn 0.3s ease-in-out forwards;
+}
+
+// ─── Footer ──────────────────────────────────────────────────────────────
+
+.footer {
+  margin-top: 40px;
+  padding-top: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-top: 1px solid var(--color-border);
+}
+
+.backButton {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  border-radius: var(--radius-md);
+  padding: 8px 12px;
+  font-size: 12px;
+  @include font-mono;
+  color: var(--color-text-soft);
+  @include transition(background-color);
+
+  &:disabled {
+    opacity: 0.4;
+  }
+  &:hover:not(:disabled) {
+    background: var(--color-hover);
+  }
+}
+
+.continueButton {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border-radius: var(--radius-full);
+  padding: 10px 24px;
+  font-size: 13px;
+  font-weight: var(--font-weight-medium);
+  background: var(--color-accent);
+  color: #fff;
+  @include transition(all);
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+  &:hover:not(:disabled) {
+    transform: scale(1.02);
+  }
+  &:active:not(:disabled) {
+    transform: scale(0.98);
+  }
+}
+
+// ─── Info modal ──────────────────────────────────────────────────────────
+
+.infoOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  @include flex-center;
+  padding: 16px;
+  background: rgba(15, 14, 12, 0.45);
+  backdrop-filter: blur(12px);
+}
+
+.infoModal {
+  width: 100%;
+  max-width: 448px;
+  overflow: hidden;
+  border-radius: var(--radius-2xl);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  box-shadow: 0 24px 60px -12px rgba(15, 14, 12, 0.4);
+  animation: fadeIn 0.3s ease-in-out forwards;
+}
+
+.infoHeader {
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.infoTitle {
+  @include font-display;
+  font-size: 26px;
+  color: var(--color-text);
+}
+
+.infoBody {
+  padding: 20px 24px;
+  font-size: 13.5px;
+  line-height: 1.6;
+  color: var(--color-text-soft);
+}
+.infoBody > * + * {
+  margin-top: 12px;
+}
+
+.infoFooter {
+  padding: 16px 24px;
+  display: flex;
+  justify-content: flex-end;
+  border-top: 1px solid var(--color-border);
+}
+
+.infoConfirmButton {
+  border-radius: var(--radius-full);
+  padding: 8px 16px;
+  font-size: 12.5px;
+  font-weight: var(--font-weight-medium);
+  background: var(--color-accent);
+  color: #fff;
+  @include transition(opacity);
+
+  &:hover {
+    opacity: 0.9;
+  }
+}

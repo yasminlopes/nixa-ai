@@ -1,0 +1,5 @@
+// height:100% e antialiasing já vêm do reset global (html, body selector).
+// Só falta a família tipográfica — antes vinha da classe utilitária font-sans.
+.body {
+  font-family: var(--font-sans), Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}

@@ -1,0 +1,103 @@
+// Nixa AI — Reset base
+// Migrado 1:1 do bloco @layer base { ... } que existia em app/globals.css.
+
+@mixin base-reset {
+  * {
+    box-sizing: border-box;
+  }
+
+  // Zera bordas em TODO elemento (equivalente ao Preflight do Tailwind que
+  // existia antes da migração pra SCSS Modules). Sem isso, <button>/<input>/
+  // <select> voltam a herdar a borda cinza/preta beveled do user-agent — foi
+  // essa a origem das "bordas pretas" na sidebar, nos botões, nos cards e no
+  // card do usuário. Só aparece borda onde um componente a declara de propósito;
+  // quando declara só a largura, herda a cor suave do token.
+  *,
+  ::before,
+  ::after {
+    border-width: 0;
+    border-style: solid;
+    border-color: var(--color-border);
+  }
+
+  // Normalização de elementos de formulário (também vinha do Preflight). Faz
+  // <button>/<input>/<textarea>/<select> herdarem tipografia e cor e perderem o
+  // fundo/aparência padrão do browser.
+  button,
+  input,
+  optgroup,
+  select,
+  textarea {
+    font: inherit;
+    font-feature-settings: inherit;
+    font-variation-settings: inherit;
+    letter-spacing: inherit;
+    color: inherit;
+    margin: 0;
+    padding: 0;
+    background-color: transparent;
+    background-image: none;
+  }
+
+  button,
+  select {
+    text-transform: none;
+  }
+
+  button,
+  [type='button'],
+  [type='reset'],
+  [type='submit'] {
+    -webkit-appearance: button;
+    appearance: button;
+  }
+
+  button {
+    cursor: pointer;
+  }
+
+  button:disabled {
+    cursor: not-allowed;
+  }
+
+  textarea {
+    resize: vertical;
+  }
+
+  ::placeholder {
+    opacity: 1;
+    color: var(--color-text-muted);
+  }
+
+  html,
+  body {
+    height: 100%;
+    overflow: hidden;
+    background: var(--color-bg);
+    color: var(--color-text);
+    font-feature-settings: 'cv11', 'ss01';
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+
+  ::selection {
+    background: var(--color-accent);
+    color: #FFFFFF;
+  }
+
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: var(--color-surface-3);
+    border-radius: 3px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--color-text-muted);
+  }
+}

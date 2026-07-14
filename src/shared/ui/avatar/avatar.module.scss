@@ -1,0 +1,49 @@
+@use '../../styles/tokens';
+
+.avatar {
+  border-radius: var(--radius-full);
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.assistant {
+  position: relative;
+  background: linear-gradient(135deg, #4F7AFF 0%, #A78BFA 100%);
+}
+
+.user {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: var(--font-weight-medium);
+  background: var(--color-ink);
+  color: var(--color-ink-text);
+}
+
+.media {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+// ─── Sizes ─────────────────────────────────────────────────────────────────
+.sm {
+  width: 28px;
+  height: 28px;
+  font-size: 11px;
+}
+.md {
+  width: 36px;
+  height: 36px;
+  font-size: 12px;
+}
+.lg {
+  width: 48px;
+  height: 48px;
+  font-size: 14px;
+}
+.xl {
+  width: 80px;
+  height: 80px;
+  font-size: 20px;
+}

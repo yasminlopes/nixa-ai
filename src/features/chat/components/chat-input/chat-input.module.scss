@@ -1,0 +1,118 @@
+@use '../../../../shared/styles/tokens';
+@use '../../../../shared/styles/mixins' as *;
+
+.wrapper {
+  position: relative;
+  width: 100%;
+}
+
+.inputBox {
+  border-radius: var(--radius-3xl);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  box-shadow: 0 4px 16px -4px rgba(15, 16, 20, 0.06);
+  @include transition(all);
+
+  &:focus-within {
+    @include focus-ring;
+  }
+}
+
+.textarea {
+  width: 100%;
+  resize: none;
+  outline: none;
+  background: transparent;
+  line-height: 1.65;
+  max-height: 220px;
+  overflow-y: auto;
+  padding: 16px 20px 8px;
+  font-size: 15px;
+  color: var(--color-text);
+  font-family: var(--font-sans), Inter, sans-serif;
+  @include scrollbar-thin;
+}
+
+.toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 12px 12px;
+}
+
+.toolbarLeft {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.attachButton {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-full);
+  @include flex-center;
+  color: var(--color-text-muted);
+  @include transition(background-color);
+
+  &:hover {
+    background: var(--color-hover);
+  }
+}
+
+.actionButton {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-full);
+  flex-shrink: 0;
+  @include flex-center;
+  @include transition(all);
+}
+
+.stopButton {
+  background: var(--color-surface-2);
+  color: var(--color-text-soft);
+
+  &:hover {
+    transform: scale(1.05);
+  }
+}
+
+.sendButton {
+  &.sendButtonActive {
+    background: var(--color-ink);
+    color: var(--color-ink-text);
+
+    &:hover {
+      transform: scale(1.05);
+    }
+    &:active {
+      transform: scale(0.95);
+    }
+  }
+
+  &.sendButtonDisabled {
+    background: var(--color-surface-2);
+    color: var(--color-text-muted);
+    cursor: not-allowed;
+  }
+}
+
+.disclaimer {
+  margin-top: 10px;
+  font-size: 10.5px;
+  line-height: 1.4;
+  text-align: center;
+  max-width: 448px;
+  margin-left: auto;
+  margin-right: auto;
+  color: var(--color-text-muted);
+}
+
+.shortcuts {
+  margin-top: 4px;
+  font-size: 10px;
+  letter-spacing: 0.02em;
+  text-align: center;
+  color: var(--color-text-muted);
+  opacity: 0.65;
+}

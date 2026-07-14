@@ -14,7 +14,7 @@ O projeto é **multi-LLM**: dá para alternar entre Gemini, OpenAI e Ollama (100
 
 ## Stack
 
-- **Frontend/API**: Next.js 16 (App Router) · React 19 · TypeScript · Tailwind
+- **Frontend/API**: Next.js 16 (App Router) · React 19 · TypeScript · SCSS Modules
 - **LLMs**: Gemini · OpenAI · Ollama
 - **RAG**: crawler próprio (Cheerio) · vector store em JSON local · busca híbrida (semântica + léxica) com re-rank · expansão de query PT→EN
 - **Segurança**: cada visitante guarda a própria API key só no localStorage do navegador — nunca em disco no servidor

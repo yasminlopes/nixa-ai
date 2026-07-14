@@ -1,0 +1,149 @@
+@use '../../styles/tokens';
+@use '../../styles/mixins' as *;
+
+.wrapper {
+  position: relative;
+  display: inline-block;
+}
+
+.trigger {
+  display: flex;
+  align-items: center;
+  border-radius: var(--radius-full);
+  font-weight: var(--font-weight-medium);
+  background: transparent;
+  color: var(--color-text-soft);
+  border: 1px solid var(--color-border);
+  outline: none;
+  @include transition(all, 0.15s);
+
+  &:hover:not(:disabled) {
+    background: var(--color-hover);
+  }
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
+
+.triggerSm {
+  padding: 4px 10px;
+  font-size: 12px;
+  gap: 6px;
+}
+.triggerMd {
+  padding: 6px 12px;
+  font-size: 13px;
+  gap: 8px;
+}
+
+.iconWrap {
+  width: 14px;
+  height: 14px;
+  @include flex-center;
+  flex-shrink: 0;
+}
+
+.chevron {
+  width: 12px;
+  height: 12px;
+  flex-shrink: 0;
+  color: var(--color-text-muted);
+  transition: transform 0.15s;
+}
+.chevronOpen {
+  transform: rotate(180deg);
+}
+
+.dropdown {
+  position: absolute;
+  z-index: 50;
+  min-width: 200px;
+  right: 0;
+  bottom: 100%;
+  margin-bottom: 8px;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  box-shadow: 0 12px 24px -6px rgba(58, 55, 47, 0.12), 0 4px 8px -4px rgba(58, 55, 47, 0.08);
+  animation: fadeIn 0.15s ease-in-out forwards;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.option {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  text-align: left;
+  background: transparent;
+  @include transition(background-color);
+
+  &:hover:not(.optionDisabled):not(.optionSelected) {
+    background: var(--color-hover);
+  }
+}
+
+.optionSelected {
+  background: var(--color-accent-soft);
+}
+
+.optionDisabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.optionIconWrap {
+  width: 16px;
+  height: 16px;
+  @include flex-center;
+  flex-shrink: 0;
+}
+
+.optionBody {
+  flex: 1;
+  min-width: 0;
+}
+
+.optionLabel {
+  display: block;
+  font-size: 13px;
+  font-weight: var(--font-weight-medium);
+  line-height: 1.2;
+  color: var(--color-text);
+}
+.optionLabelSelected {
+  color: var(--color-accent-deep);
+}
+
+.optionHint {
+  display: block;
+  font-size: 10.5px;
+  line-height: 1.2;
+  margin-top: 2px;
+  color: var(--color-text-muted);
+}
+
+.optionLock {
+  width: 12px;
+  height: 12px;
+  flex-shrink: 0;
+  color: var(--color-text-muted);
+}
+
+.optionCheck {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+  color: var(--color-accent);
+}

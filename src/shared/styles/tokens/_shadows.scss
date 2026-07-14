@@ -1,0 +1,16 @@
+// Nixa AI — Shadow tokens
+// Sombras em tom neutro-frio. Bordas definem estrutura, sombras definem
+// elevação — usadas com moderação.
+//
+// Não inclui override de dark mode aqui — veja a nota em _colors.scss sobre
+// por que seletores `.dark {}` não podem viver num partial consumido por
+// .module.scss (CSS Modules escopa a classe e ela deixa de bater com o
+// `.dark` real do <html>).
+
+:root {
+  --shadow-xs: 0 1px 2px 0 rgba(15, 16, 20, 0.04);
+  --shadow-sm: 0 1px 3px 0 rgba(15, 16, 20, 0.06), 0 1px 2px -1px rgba(15, 16, 20, 0.04);
+  --shadow-md: 0 4px 8px -2px rgba(15, 16, 20, 0.06), 0 2px 4px -2px rgba(15, 16, 20, 0.04);
+  --shadow-lg: 0 12px 24px -6px rgba(15, 16, 20, 0.08), 0 4px 8px -4px rgba(15, 16, 20, 0.04);
+  --shadow-xl: 0 24px 40px -10px rgba(15, 16, 20, 0.12), 0 8px 16px -8px rgba(15, 16, 20, 0.06);
+}

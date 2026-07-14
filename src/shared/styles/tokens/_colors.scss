@@ -1,0 +1,48 @@
+// Nixa AI — Color tokens
+// Migrado 1:1 das custom properties que existiam em app/globals.css.
+// Cool gray surfaces, electric blue accent, ink black CTAs.
+//
+// IMPORTANTE: as overrides de dark mode (seletor `.dark { ... }`) NÃO ficam
+// aqui. Quando este partial é consumido via `@use` dentro de um .module.scss,
+// o CSS Modules escopa (hash) QUALQUER seletor de classe — inclusive um
+// `.dark {}` solto — e ele deixa de bater com o `.dark` real aplicado no
+// <html> pelo ThemeContext. Por isso as overrides de dark mode continuam
+// centralizadas em app/globals.css (fonte de verdade, carregado como CSS
+// global, não como module) até a fase final da migração, quando os tokens
+// passarão a ser importados uma única vez a partir de um stylesheet global.
+
+:root {
+  --sidebar-width: 280px;
+
+  // Superfícies
+  --color-bg: #F4F5F8;
+  --color-bg-elevated: #FAFBFC;
+  --color-surface: #FFFFFF;
+  --color-surface-2: #EDEEF2;
+  --color-surface-3: #E4E6EB;
+  --color-text: #0A0B0E;
+  --color-text-soft: #4A4D57;
+  --color-text-muted: #9CA0AC;
+  --color-border: rgba(15, 16, 20, 0.06);
+  --color-border-strong: rgba(15, 16, 20, 0.10);
+  --color-hover: #EDEEF2;
+
+  // Accent — electric blue
+  --color-accent: #4F7AFF;
+  --color-accent-hover: #3D63E8;
+  --color-accent-soft: #E8F0FF;
+  --color-accent-deep: #1E3A8A;
+
+  // Ink — CTAs pretos puros
+  --color-ink: #0F1014;
+  --color-ink-soft: #1F2027;
+  --color-ink-border: #2E3038;
+  --color-ink-text: #FFFFFF;
+  --color-ink-muted: #9CA0AC;
+
+  // Danger — ações destrutivas
+  --color-danger: #DC2626;
+  --color-danger-hover: #B91C1C;
+  --color-danger-soft: #FEE2E2;
+  --color-danger-deep: #7F1D1D;
+}

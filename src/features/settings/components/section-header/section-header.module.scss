@@ -1,0 +1,34 @@
+@use '../../../../shared/styles/tokens';
+@use '../../../../shared/styles/mixins' as *;
+
+.wrapper {
+  margin-bottom: 32px;
+}
+
+.eyebrow {
+  font-size: 10.5px;
+  margin-bottom: 12px;
+  color: var(--color-accent);
+  @include uppercase-label;
+}
+
+.title {
+  @include font-display;
+  font-weight: var(--font-weight-semibold);
+  font-size: 32px;
+  line-height: 1.1;
+  color: var(--color-text);
+
+  @include sm-up {
+    font-size: 38px;
+  }
+}
+
+.subtitle {
+  font-family: var(--font-family-sans);
+  font-size: 16px;
+  line-height: 1.6;
+  margin-top: 8px;
+  max-width: 448px;
+  color: var(--color-text-soft);
+}

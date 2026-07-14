@@ -1,0 +1,28 @@
+@use '../../styles/tokens';
+@use '../../styles/mixins' as *;
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border-radius: var(--radius-full);
+  padding: 2px 8px;
+  font-size: 10px;
+  font-weight: var(--font-weight-medium);
+  @include uppercase-label;
+}
+
+.neutral {
+  background: var(--color-surface-2);
+  color: var(--color-text-soft);
+}
+
+.accent {
+  background: var(--color-accent-soft);
+  color: var(--color-accent-deep);
+}
+
+.danger {
+  background: var(--color-danger-soft);
+  color: var(--color-danger-deep);
+}

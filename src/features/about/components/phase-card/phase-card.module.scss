@@ -1,0 +1,127 @@
+@use '../../../../shared/styles/tokens';
+@use '../../../../shared/styles/mixins' as *;
+
+.card {
+  border-radius: var(--radius-3xl);
+  padding: 24px;
+  margin-bottom: 16px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+}
+.card:last-child {
+  margin-bottom: 0;
+}
+
+.header {
+  margin-bottom: 20px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.phaseLabel {
+  font-size: 10.5px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  margin-bottom: 4px;
+  @include font-mono;
+  color: var(--color-accent);
+}
+
+.headerRow {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+
+  @include sm-up {
+    flex-direction: row;
+    align-items: baseline;
+    justify-content: space-between;
+  }
+}
+
+.phaseTitle {
+  @include font-display;
+  font-weight: var(--font-weight-semibold);
+  font-size: 22px;
+  color: var(--color-text);
+}
+
+.phaseHint {
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.step {
+  display: flex;
+  gap: 16px;
+}
+
+.stepMarker {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.stepIcon {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-full);
+  position: relative;
+  @include flex-center;
+  background: var(--color-surface-2);
+  color: var(--color-text-soft);
+  border: 1px solid var(--color-border);
+}
+.stepIconAccent {
+  background: var(--color-accent);
+  color: #fff;
+  border-color: var(--color-accent);
+}
+
+.stepConnector {
+  width: 1px;
+  flex: 1;
+  margin-top: 4px;
+  min-height: 16px;
+  background: var(--color-border);
+}
+
+.stepContent {
+  flex: 1;
+  min-width: 0;
+  padding-bottom: 8px;
+}
+
+.stepContentHead {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.stepNumber {
+  font-size: 10px;
+  @include font-mono;
+  color: var(--color-text-muted);
+}
+
+.stepTitle {
+  @include font-display;
+  font-weight: var(--font-weight-semibold);
+  font-size: 15px;
+  color: var(--color-text);
+}
+
+.stepDesc {
+  font-size: 13.5px;
+  line-height: 1.6;
+  color: var(--color-text-soft);
+}

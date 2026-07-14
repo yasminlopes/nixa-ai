@@ -1,0 +1,219 @@
+@use '../../shared/styles/tokens';
+@use '../../shared/styles/mixins' as *;
+
+.loadingScreen {
+  height: 100%;
+  width: 100%;
+  background: var(--color-bg);
+}
+
+.root {
+  display: flex;
+  height: 100%;
+  position: relative;
+}
+
+.mobileOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  background: rgba(0, 0, 0, 0.35);
+
+  @include md-up {
+    display: none;
+  }
+}
+
+.sidebarWrap {
+  position: fixed;
+  z-index: 40;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  transition: transform 0.2s;
+
+  @include md-up {
+    position: relative;
+    transform: none !important;
+  }
+}
+.sidebarWrapClosed {
+  transform: translateX(-100%);
+}
+
+.main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.mobileHeader {
+  height: 48px;
+  padding: 0 16px;
+  display: flex;
+  align-items: center;
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-bg);
+
+  @include md-up {
+    display: none;
+  }
+}
+
+.mobileMenuButton {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-md);
+  @include flex-center;
+  color: var(--color-text-soft);
+  @include transition(background-color);
+}
+
+.mobileTitle {
+  margin-left: 8px;
+  @include font-display;
+  font-weight: var(--font-weight-semibold);
+  font-size: 18px;
+  color: var(--color-text);
+}
+
+// ─── Setup gate ──────────────────────────────────────────────────────────
+
+.gateOverlay {
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  @include flex-center;
+  backdrop-filter: blur(12px);
+  background: rgba(15, 14, 12, 0.45);
+}
+
+.gateInner {
+  width: 100%;
+  max-width: 448px;
+  margin: 0 16px;
+}
+.gateInner > * + * {
+  margin-top: 20px;
+}
+
+.gateSteps {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  font-size: 11px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  @include font-mono;
+  color: #F5F2EA;
+}
+
+.gateCard {
+  width: 100%;
+  text-align: left;
+  border-radius: var(--radius-2xl);
+  overflow: hidden;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  box-shadow: 0 24px 60px -12px rgba(15, 14, 12, 0.5);
+  @include transition(all, 0.2s);
+
+  &:hover {
+    transform: scale(1.01);
+  }
+}
+
+.gateCardBody {
+  padding: 24px;
+}
+
+.gateCardHead {
+  margin-bottom: 20px;
+}
+
+.gateEyebrow {
+  font-size: 10.5px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+  @include font-mono;
+  color: var(--color-accent);
+}
+
+.gateTitle {
+  @include font-display;
+  font-weight: var(--font-weight-semibold);
+  font-size: 28px;
+  line-height: 1.2;
+  color: var(--color-text);
+}
+
+.gateDesc {
+  font-size: 14px;
+  margin-top: 8px;
+  line-height: 1.6;
+  color: var(--color-text-soft);
+}
+
+.gateNotice {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  border-radius: var(--radius-lg);
+  padding: 12px 14px;
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+}
+
+.gateNoticeIcon {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+  margin-top: 2px;
+  color: var(--color-accent);
+}
+
+.gateNoticeText {
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--color-text-soft);
+}
+
+.gateNoticeStrong {
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text);
+}
+
+.gateFooter {
+  margin-top: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.gateHint {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  @include font-mono;
+  color: var(--color-text-muted);
+}
+
+.gateCta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  border-radius: var(--radius-full);
+  padding: 6px 16px;
+  font-size: 12px;
+  font-weight: var(--font-weight-medium);
+  background: var(--color-accent);
+  color: #fff;
+  transition: opacity 0.2s;
+}
+.gateCard:hover .gateCta {
+  opacity: 0.9;
+}

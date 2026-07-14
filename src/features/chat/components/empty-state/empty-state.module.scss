@@ -1,0 +1,94 @@
+@use '../../../../shared/styles/tokens';
+@use '../../../../shared/styles/mixins' as *;
+
+.wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  min-height: 60vh;
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 0 24px;
+  width: 100%;
+  text-align: center;
+}
+
+.avatarWrap {
+  margin-bottom: 24px;
+}
+
+.avatarCircle {
+  width: 96px;
+  height: 96px;
+  border-radius: var(--radius-full);
+  overflow: hidden;
+  position: relative;
+  background: linear-gradient(135deg, #4F7AFF 0%, #A78BFA 100%);
+}
+
+.avatarVideo {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.title {
+  @include font-display;
+  font-weight: var(--font-weight-semibold);
+  font-size: 42px;
+  line-height: 1.05;
+  letter-spacing: -0.02em;
+  margin-bottom: 8px;
+  color: var(--color-text);
+
+  @include sm-up {
+    font-size: 52px;
+  }
+}
+
+.subtitle {
+  font-size: 18px;
+  margin-bottom: 40px;
+  max-width: 448px;
+  line-height: 1.6;
+  color: var(--color-text-soft);
+}
+
+.suggestions {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+  width: 100%;
+
+  @include sm-up {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.suggestion {
+  text-align: left;
+  font-size: 13.5px;
+  line-height: 1.4;
+  padding: 12px 16px;
+  border-radius: var(--radius-2xl);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  color: var(--color-text-soft);
+  @include transition(all);
+
+  &:hover {
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-sm);
+    border-color: var(--color-accent);
+  }
+  &:hover .suggestionText {
+    color: var(--color-accent);
+  }
+}
+
+.suggestionText {
+  display: block;
+  @include transition(color);
+}

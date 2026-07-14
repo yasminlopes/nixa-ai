@@ -1,0 +1,44 @@
+// Nixa AI — Typography tokens
+// Dados puros (família, peso, escala de tamanho). Como e onde aplicar —
+// por exemplo o mixin font-display com letter-spacing — é decisão de
+// apresentação e fica em styles/mixins/_font.scss, não aqui.
+//
+// As fontes em si (Inter, Bricolage Grotesque, JetBrains Mono) continuam
+// carregadas via next/font em app/layout.tsx, que define
+// --font-sans/--font-display/--font-mono consumidos abaixo.
+
+:root {
+  --font-family-sans: var(--font-sans), Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-family-display: var(--font-display), 'Bricolage Grotesque', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-family-mono: var(--font-mono), 'JetBrains Mono', ui-monospace, monospace;
+
+  --font-weight-regular: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+
+  --font-size-2xs: 10px;
+  --line-height-2xs: 14px;
+  --font-size-xs: 12px;
+  --line-height-xs: 16px;
+  --font-size-sm: 13px;
+  --line-height-sm: 20px;
+  --font-size-base: 14px;
+  --line-height-base: 22px;
+  --font-size-md: 15px;
+  --line-height-md: 24px;
+  --font-size-lg: 16px;
+  --line-height-lg: 26px;
+  --font-size-xl: 18px;
+  --line-height-xl: 28px;
+  --font-size-2xl: 22px;
+  --line-height-2xl: 30px;
+  --font-size-3xl: 28px;
+  --line-height-3xl: 36px;
+  --font-size-4xl: 36px;
+  --line-height-4xl: 42px;
+  --font-size-5xl: 48px;
+  --line-height-5xl: 54px;
+  --font-size-6xl: 64px;
+  --line-height-6xl: 68px;
+}

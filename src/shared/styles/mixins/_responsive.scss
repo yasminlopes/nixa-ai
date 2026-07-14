@@ -1,0 +1,36 @@
+// Breakpoints equivalentes aos usados hoje (sm:/md: no Tailwind).
+
+$breakpoint-sm: 640px;
+$breakpoint-md: 768px;
+$breakpoint-lg: 1024px;
+$breakpoint-xl: 1280px;
+
+@mixin above($breakpoint) {
+  @media (min-width: $breakpoint) {
+    @content;
+  }
+}
+
+@mixin sm-up {
+  @include above($breakpoint-sm) {
+    @content;
+  }
+}
+
+@mixin md-up {
+  @include above($breakpoint-md) {
+    @content;
+  }
+}
+
+@mixin lg-up {
+  @include above($breakpoint-lg) {
+    @content;
+  }
+}
+
+@mixin xl-up {
+  @include above($breakpoint-xl) {
+    @content;
+  }
+}

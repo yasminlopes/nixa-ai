@@ -1,5 +1,5 @@
 'use client'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, type MouseEvent } from 'react'
 import {
   Plus,
   Trash2,
@@ -9,9 +9,10 @@ import {
   Settings as SettingsIcon,
   MessageSquare,
 } from 'lucide-react'
+import clsx from 'clsx'
 import { Conversation } from '@/shared/types'
-import { cn } from '@/shared/utils/cn'
 import { WorkspaceModal, WorkspaceTab } from '@/features/settings'
+import styles from './index.module.scss'
 
 interface SidebarProps {
   activeId: string | null
@@ -78,7 +79,7 @@ export function Sidebar({
     setUserAvatar(avatar)
   }
 
-  function deleteConversation(e: React.MouseEvent, id: string) {
+  function deleteConversation(e: MouseEvent, id: string) {
     e.stopPropagation()
     const updated = conversations.filter(c => c.id !== id)
     setConversations(updated)
@@ -96,148 +97,90 @@ export function Sidebar({
 
   return (
     <>
-      <aside
-        className={cn(
-          'h-full flex flex-col shrink-0 transition-all duration-200',
-          collapsed ? 'w-[68px]' : 'w-[280px]'
-        )}
-        style={{
-          background: 'var(--color-bg)',
-        }}
-      >
+      <aside className={clsx(styles.aside, collapsed ? styles.asideCollapsed : styles.asideExpanded)}>
         {/* Header */}
-        <div className="px-4 pt-5 pb-4">
-          <div className="flex items-center justify-between mb-5">
+        <div className={styles.header}>
+          <div className={styles.headerRow}>
             {!collapsed && (
-              <div className="flex items-center gap-2.5 animate-fadeIn">
-                <div className="w-8 h-8 rounded-xl overflow-hidden shrink-0"
-                     style={{ background: 'linear-gradient(135deg, #4F7AFF 0%, #A78BFA 100%)' }}>
+              <div className={clsx(styles.logo, 'animate-fadeIn')}>
+                <div className={styles.logoIcon}>
                   <video
                     src="/assets/nixa-video.mp4"
                     autoPlay muted loop playsInline
-                    className="w-full h-full object-cover"
+                    className={styles.logoVideo}
                   />
                 </div>
-                <span
-                  className="font-display font-semibold text-[18px] tracking-tight"
-                  style={{ color: 'var(--color-text)' }}
-                >
-                  Nixa
-                </span>
+                <span className={styles.logoText}>Nixa</span>
               </div>
             )}
 
             <button
               onClick={onToggleCollapse}
-              className={cn(
-                'hidden md:flex items-center justify-center w-8 h-8 rounded-lg transition-colors',
-                collapsed && 'mx-auto'
-              )}
-              style={{ color: 'var(--color-text-muted)' }}
-              onMouseEnter={e => {
-                e.currentTarget.style.background = 'var(--color-hover)'
-                e.currentTarget.style.color = 'var(--color-text)'
-              }}
-              onMouseLeave={e => {
-                e.currentTarget.style.background = 'transparent'
-                e.currentTarget.style.color = 'var(--color-text-muted)'
-              }}
+              className={clsx(styles.iconButton, styles.collapseButton, collapsed && styles.collapseButtonCentered)}
               title={collapsed ? 'Expandir' : 'Colapsar'}
             >
-              {collapsed ? <PanelLeftOpen className="w-4 h-4" /> : <PanelLeftClose className="w-4 h-4" />}
+              {collapsed ? <PanelLeftOpen size={16} /> : <PanelLeftClose size={16} />}
             </button>
 
             <button
               onClick={onCloseMobile}
-              className="md:hidden flex items-center justify-center w-8 h-8 rounded-lg transition-colors"
-              style={{ color: 'var(--color-text-muted)' }}
+              className={clsx(styles.iconButton, styles.mobileCloseButton)}
             >
-              <X className="w-4 h-4" />
+              <X size={16} />
             </button>
           </div>
 
           {/* New chat — pill preto */}
           <button
             onClick={handleNewChat}
-            className={cn(
-              'w-full flex items-center rounded-2xl text-[13px] font-medium transition-all hover:opacity-90 active:scale-[0.98]',
-              collapsed ? 'justify-center px-2 py-2.5' : 'gap-2 px-3.5 py-2.5'
+            className={clsx(
+              styles.newChatButton,
+              collapsed ? styles.newChatButtonCollapsed : styles.newChatButtonExpanded
             )}
-            style={{
-              background: 'var(--color-ink)',
-              color: 'var(--color-ink-text)',
-            }}
             title="Nova conversa"
           >
-            <Plus className="w-4 h-4 shrink-0" strokeWidth={2.5} />
+            <Plus size={16} style={{ flexShrink: 0 }} strokeWidth={2.5} />
             {!collapsed && 'Nova conversa'}
           </button>
         </div>
 
         {/* Conversations */}
-        <div className="flex-1 overflow-y-auto scrollbar-thin px-2 pb-2">
+        <div className={styles.list}>
           {collapsed ? (
-            <div className="flex flex-col items-center gap-1">
+            <div className={styles.collapsedList}>
               {conversations.slice(0, 10).map(conv => (
                 <button
                   key={conv.id}
                   onClick={() => handleSelectConversation(conv.id)}
-                  className="w-11 h-11 rounded-xl flex items-center justify-center transition-colors"
-                  style={{
-                    background: activeId === conv.id ? 'var(--color-accent-soft)' : 'transparent',
-                    color: activeId === conv.id ? 'var(--color-accent)' : 'var(--color-text-muted)',
-                  }}
-                  onMouseEnter={e => { if (activeId !== conv.id) e.currentTarget.style.background = 'var(--color-hover)' }}
-                  onMouseLeave={e => { if (activeId !== conv.id) e.currentTarget.style.background = 'transparent' }}
+                  className={clsx(styles.collapsedItem, activeId === conv.id && styles.collapsedItemActive)}
                   title={conv.title}
                 >
-                  <MessageSquare className="w-4 h-4" />
+                  <MessageSquare size={16} />
                 </button>
               ))}
             </div>
           ) : conversations.length === 0 ? (
-            <div className="px-3 mt-10 text-center">
-              <p
-                className="text-[12.5px] leading-relaxed"
-                style={{ color: 'var(--color-text-muted)' }}
-              >
+            <div className={styles.emptyState}>
+              <p className={styles.emptyStateText}>
                 Suas conversas vão aparecer aqui.
               </p>
             </div>
           ) : (
             Object.entries(grouped).map(([group, convs]) => (
-              <div key={group} className="mb-5">
-                <p
-                  className="text-[10.5px] font-medium uppercase tracking-[0.1em] px-3 mb-1.5"
-                  style={{ color: 'var(--color-text-muted)' }}
-                >
-                  {group}
-                </p>
+              <div key={group} className={styles.group}>
+                <p className={styles.groupLabel}>{group}</p>
                 {convs.map(conv => {
                   const active = activeId === conv.id
                   return (
                     <button
                       key={conv.id}
                       onClick={() => handleSelectConversation(conv.id)}
-                      className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-left group transition-colors"
-                      style={{
-                        background: active ? 'var(--color-surface)' : 'transparent',
-                        color: active ? 'var(--color-text)' : 'var(--color-text-soft)',
-                        boxShadow: active ? '0 1px 3px rgba(15,16,20,0.04)' : 'none',
-                      }}
-                      onMouseEnter={e => { if (!active) e.currentTarget.style.background = 'var(--color-surface)' }}
-                      onMouseLeave={e => { if (!active) e.currentTarget.style.background = 'transparent' }}
+                      className={clsx(styles.item, active && styles.itemActive)}
                     >
-                      <MessageSquare
-                        className="w-3.5 h-3.5 shrink-0"
-                        style={{ color: active ? 'var(--color-accent)' : 'var(--color-text-muted)' }}
-                      />
-                      <span className="flex-1 truncate text-[13px] leading-snug">
-                        {conv.title}
-                      </span>
+                      <MessageSquare className={clsx(styles.itemIcon, active && styles.itemIconActive)} />
+                      <span className={styles.itemTitle}>{conv.title}</span>
                       <Trash2
-                        className="w-3.5 h-3.5 shrink-0 opacity-0 group-hover:opacity-40 hover:!opacity-100 transition-opacity"
-                        style={{ color: 'var(--color-text-muted)' }}
+                        className={styles.itemDelete}
                         onClick={e => deleteConversation(e, conv.id)}
                       />
                     </button>
@@ -249,61 +192,36 @@ export function Sidebar({
         </div>
 
         {/* Footer — user pill */}
-        <div className="px-3 pb-3 pt-2">
+        <div className={styles.footer}>
           <button
             onClick={() => openWorkspaceTab('profile')}
-            className={cn(
-              'w-full rounded-2xl text-sm transition-colors',
-              collapsed ? 'px-2 py-2' : 'px-2 py-2'
-            )}
-            style={{ background: 'var(--color-surface)' }}
-            onMouseEnter={e => e.currentTarget.style.background = 'var(--color-hover)'}
-            onMouseLeave={e => e.currentTarget.style.background = 'var(--color-surface)'}
+            className={styles.footerButton}
             title="Configurações"
           >
             {collapsed ? (
-              <div className="flex justify-center">
+              <div className={styles.footerCollapsed}>
                 {userAvatar ? (
-                  <img src={userAvatar} alt="" className="w-9 h-9 rounded-full object-cover" />
+                  <img src={userAvatar} alt="" className={styles.footerAvatar} />
                 ) : (
-                  <div
-                    className="w-9 h-9 rounded-full flex items-center justify-center text-[13px] font-medium"
-                    style={{ background: 'var(--color-ink)', color: 'var(--color-ink-text)' }}
-                  >
+                  <div className={styles.footerAvatarFallback}>
                     {userName.slice(0, 1).toUpperCase()}
                   </div>
                 )}
               </div>
             ) : (
-              <div className="flex items-center gap-2.5">
+              <div className={styles.footerExpanded}>
                 {userAvatar ? (
-                  <img src={userAvatar} alt="" className="w-9 h-9 rounded-full object-cover shrink-0" />
+                  <img src={userAvatar} alt="" className={styles.footerAvatar} />
                 ) : (
-                  <div
-                    className="w-9 h-9 rounded-full flex items-center justify-center text-[13px] font-medium shrink-0"
-                    style={{ background: 'var(--color-ink)', color: 'var(--color-ink-text)' }}
-                  >
+                  <div className={styles.footerAvatarFallback}>
                     {userName.slice(0, 1).toUpperCase()}
                   </div>
                 )}
-                <div className="flex-1 text-left min-w-0">
-                  <p
-                    className="text-[13px] font-semibold truncate"
-                    style={{ color: 'var(--color-text)' }}
-                  >
-                    {userName}
-                  </p>
-                  <p
-                    className="text-[11px] tracking-wide"
-                    style={{ color: 'var(--color-text-muted)' }}
-                  >
-                    Configurações
-                  </p>
+                <div className={styles.footerBody}>
+                  <p className={styles.footerName}>{userName}</p>
+                  <p className={styles.footerHint}>Configurações</p>
                 </div>
-                <SettingsIcon
-                  className="w-4 h-4 shrink-0"
-                  style={{ color: 'var(--color-text-muted)' }}
-                />
+                <SettingsIcon className={styles.footerSettingsIcon} />
               </div>
             )}
           </button>

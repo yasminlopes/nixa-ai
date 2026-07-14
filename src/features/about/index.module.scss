@@ -1,0 +1,157 @@
+@use '../../shared/styles/tokens';
+@use '../../shared/styles/mixins' as *;
+
+.main {
+  height: 100%;
+  overflow-y: auto;
+  background: var(--color-bg);
+  color: var(--color-text);
+}
+
+.inner {
+  margin: 0 auto;
+  max-width: 768px;
+  padding: 64px 24px;
+}
+
+.hero {
+  margin-bottom: 56px;
+}
+
+.heroEyebrow {
+  font-size: 11px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  margin-bottom: 16px;
+  @include font-mono;
+  color: var(--color-accent);
+}
+
+.heroTitle {
+  @include font-display;
+  font-weight: var(--font-weight-semibold);
+  font-size: 56px;
+  line-height: 0.95;
+  margin-bottom: 20px;
+  color: var(--color-text);
+
+  @include sm-up {
+    font-size: 68px;
+  }
+}
+
+.heroSubtitle {
+  font-size: 16px;
+  line-height: 1.6;
+  max-width: 576px;
+  color: var(--color-text-soft);
+}
+
+.introText {
+  font-size: 14px;
+  line-height: 1.6;
+  margin-bottom: 24px;
+  max-width: 576px;
+  color: var(--color-text-soft);
+}
+
+.introStrong {
+  color: var(--color-text);
+}
+
+.infoCard {
+  border-radius: var(--radius-3xl);
+  padding: 24px;
+  display: grid;
+  grid-template-columns: 1fr;
+  column-gap: 32px;
+  row-gap: 20px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+
+  @include sm-up {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.infoItem {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.infoKey {
+  font-size: 10px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  @include font-mono;
+  color: var(--color-text-muted);
+}
+
+.infoValue {
+  font-size: 14px;
+  color: var(--color-text);
+}
+
+.envCard {
+  border-radius: var(--radius-3xl);
+  padding: 24px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+}
+
+.envPre {
+  font-size: 12.5px;
+  line-height: 1.75;
+  overflow-x: auto;
+  color: var(--color-text);
+  font-family: var(--font-family-mono);
+  @include scrollbar-thin;
+}
+
+.footer {
+  margin-top: 80px;
+  padding-top: 32px;
+  border-top: 1px solid var(--color-border);
+}
+
+.footerRow {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+
+  @include sm-up {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+  }
+}
+
+.footerName {
+  @include font-display;
+  font-weight: var(--font-weight-semibold);
+  font-size: 18px;
+  color: var(--color-text);
+}
+
+.footerLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 13px;
+  margin-top: 4px;
+  text-underline-offset: 4px;
+  color: var(--color-accent);
+  @include transition(color);
+
+  &:hover {
+    text-decoration: underline;
+  }
+}
+
+.footerYear {
+  font-size: 11px;
+  letter-spacing: 0.02em;
+  @include font-mono;
+  color: var(--color-text-muted);
+}

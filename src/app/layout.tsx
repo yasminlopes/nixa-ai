@@ -1,7 +1,8 @@
 import type { Metadata } from 'next'
 import { Inter, Bricolage_Grotesque, JetBrains_Mono } from 'next/font/google'
-import './globals.css'
+import './globals.scss'
 import { ThemeProvider } from '@/shared/contexts/theme-context'
+import styles from './layout.module.scss'
 
 const inter = Inter({
   subsets: ['latin'],
@@ -31,7 +32,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="pt-BR" suppressHydrationWarning>
       <body
-        className={`${inter.variable} ${display.variable} ${mono.variable} h-full font-sans antialiased`}
+        className={`${inter.variable} ${display.variable} ${mono.variable} ${styles.body}`}
         style={{ background: 'var(--color-bg)', color: 'var(--color-text)' }}
       >
         <ThemeProvider>
