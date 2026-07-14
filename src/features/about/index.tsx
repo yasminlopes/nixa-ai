@@ -127,7 +127,10 @@ export function AboutView() {
         <Section eyebrow="03" title="Variáveis de ambiente">
           <div className={styles.envCard}>
             <pre className={styles.envPre}>
-{`# Opcionais — fallback compartilhado do site (visitantes usam a própria chave)
+{`# Obrigatória — deriva a chave AES-256-GCM que criptografa as API keys no servidor
+SETTINGS_ENCRYPTION_KEY=
+
+# Opcionais — fallback compartilhado do site, caso ninguém tenha salvo uma chave
 GEMINI_API_KEY=            # Google AI Studio — gratuito
 OPENAI_API_KEY=
 

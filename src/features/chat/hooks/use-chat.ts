@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
-import { getStoredSettings, saveStoredSettings, getApiKey, hasKey } from '@/shared/utils/llm-settings-storage'
+import { fetchSettings, updateSettings } from '@/shared/services/settings-service'
+import { getStoredProvider, saveStoredProvider } from '@/shared/utils/llm-settings-storage'
 import { sendChatMessage } from '../services/chat-service'
 import { type ChatViewProps, type Conversation, type MessageType, type Provider } from '../types'
 
@@ -8,7 +9,7 @@ export function useChat({ conversationId, onConversationSaved }: ChatViewProps) 
   const [input, setInput] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [docsCount, setDocsCount] = useState<number | null>(null)
-  const [provider, setProvider] = useState<Provider>('gemini')
+  const [provider, setProvider] = useState<Provider>(() => getStoredProvider() ?? 'gemini')
   const [hasKeys, setHasKeys] = useState<Partial<Record<Provider, boolean>>>({})
   const bottomRef = useRef<HTMLDivElement>(null)
   const abortRef = useRef<AbortController | null>(null)
@@ -33,12 +34,9 @@ export function useChat({ conversationId, onConversationSaved }: ChatViewProps) 
   }, [])
 
   useEffect(() => {
-    const stored = getStoredSettings()
-    setProvider(stored.defaultProvider)
-    setHasKeys({
-      gemini: hasKey('gemini'),
-      openai: hasKey('openai'),
-      ollama: true,
+    fetchSettings().then(settings => {
+      setProvider(settings.defaultProvider)
+      setHasKeys(settings.hasKeys)
     })
   }, [])
 
@@ -81,7 +79,6 @@ export function useChat({ conversationId, onConversationSaved }: ChatViewProps) 
         messages: [...messages, userMsg],
         userName: localStorage.getItem('nixa-user-name') ?? undefined,
         provider,
-        apiKey: getApiKey(provider),
         signal: abortRef.current.signal,
       })
 
@@ -118,7 +115,8 @@ export function useChat({ conversationId, onConversationSaved }: ChatViewProps) 
 
   function handleProviderChange(nextProvider: Provider) {
     setProvider(nextProvider)
-    saveStoredSettings({ defaultProvider: nextProvider })
+    saveStoredProvider(nextProvider)
+    updateSettings({ defaultProvider: nextProvider }).catch(() => { /* mantém seleção local mesmo se a sync falhar */ })
   }
 
   const isStreaming = isLoading && messages[messages.length - 1]?.role === 'assistant'

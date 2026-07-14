@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { AlertTriangle } from 'lucide-react'
+import { updateSettings } from '@/shared/services/settings-service'
 import { SectionHeader } from '../section-header'
 import styles from './profile-tab.module.scss'
 
@@ -37,6 +38,7 @@ export function ProfileTab() {
     if (!confirmed) return
     setResetting(true); setMessage(null); setError(null)
     try {
+      await updateSettings({ defaultProvider: 'gemini', apiKeys: { gemini: '', openai: '' } }).catch(() => { /* segue o reset local mesmo se o servidor não responder */ })
       localStorage.clear(); sessionStorage.clear()
       if (typeof caches !== 'undefined') {
         const keys = await caches.keys()

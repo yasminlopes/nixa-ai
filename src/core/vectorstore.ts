@@ -1,5 +1,6 @@
 import { DocChunk } from '@/shared/types'
 import { getEmbeddingForProvider, type EmbeddingProvider } from '@/core/embeddings'
+import { resolveProviderApiKey, MissingApiKeyError } from '@/core/settings/provider-key-service'
 import fs from 'fs/promises'
 import path from 'path'
 
@@ -265,24 +266,14 @@ export async function getEmbedding(
   if (cached) return cached
 
   try {
-    let apiKey: string | null = null
-
-    switch (provider) {
-      case 'gemini':
-        apiKey = process.env.GEMINI_API_KEY ?? null
-        break
-      case 'openai':
-        apiKey = process.env.OPENAI_API_KEY ?? null
-        break
-      case 'ollama':
-        apiKey = ''
-        break
-      default:
-        throw new Error(`Provider desconhecido: ${provider}`)
-    }
-
-    if (apiKey === null) {
-      throw new Error(`Chave de API não encontrada para ${provider}.`)
+    let apiKey: string
+    try {
+      apiKey = await resolveProviderApiKey(provider)
+    } catch (err) {
+      if (err instanceof MissingApiKeyError) {
+        throw new Error(`Chave de API não encontrada para ${provider}.`)
+      }
+      throw err
     }
 
     const result = await getEmbeddingForProvider(provider, safe, apiKey, onWarning)

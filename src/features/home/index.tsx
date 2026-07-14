@@ -7,7 +7,7 @@ import { useRouter } from 'next/navigation'
 import { Conversation } from '@/shared/types'
 import { PanelLeft, KeyRound, ShieldCheck, ArrowRight, Sparkles } from 'lucide-react'
 import clsx from 'clsx'
-import { hasKey } from '@/shared/utils/llm-settings-storage'
+import { fetchSettings } from '@/shared/services/settings-service'
 import styles from './index.module.scss'
 
 type GateState = 'loading' | 'key' | 'index' | 'done'
@@ -30,7 +30,8 @@ export function HomeView() {
 
   async function checkGate() {
     try {
-      const hasAnyKey = hasKey('gemini') || hasKey('openai') || hasKey('ollama')
+      const settings = await fetchSettings()
+      const hasAnyKey = settings.hasKeys.gemini || settings.hasKeys.openai || settings.hasKeys.ollama
       if (!hasAnyKey) { setGateState('key'); return }
 
       const docsRes = await fetch('/api/index-docs')

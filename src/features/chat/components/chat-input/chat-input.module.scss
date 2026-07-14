@@ -46,19 +46,6 @@
   gap: 6px;
 }
 
-.attachButton {
-  width: 32px;
-  height: 32px;
-  border-radius: var(--radius-full);
-  @include flex-center;
-  color: var(--color-text-muted);
-  @include transition(background-color);
-
-  &:hover {
-    background: var(--color-hover);
-  }
-}
-
 .actionButton {
   width: 36px;
   height: 36px;

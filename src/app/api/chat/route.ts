@@ -3,6 +3,7 @@ import { searchSimilarDocs } from '@/core/vectorstore'
 import { buildSystemPrompt } from '@/core/rag'
 import { Message } from '@/shared/types'
 import { type Provider } from '@/core/providers'
+import { resolveProviderApiKey, MissingApiKeyError } from '@/core/settings/provider-key-service'
 import { runOpenAIChat, runGeminiChat, runOllamaChat, extractRetryDelaySeconds } from '@/core/llm'
 
 export const runtime = 'nodejs'
@@ -215,12 +216,10 @@ export async function POST(req: NextRequest) {
     messages,
     userName,
     provider: requestedProvider,
-    apiKey: clientApiKey,
   }: {
     messages: Message[]
     userName?: string
     provider?: Provider
-    apiKey?: string
   } = await req.json()
 
   if (!messages?.length) {
@@ -274,32 +273,23 @@ export async function POST(req: NextRequest) {
     }),
   })
 
-  // A chave vem do navegador do usuário (localStorage); se ausente, cai no env
-  // compartilhado do site (só existe para gemini/openai, se o dono do deploy configurar).
-  let providerApiKey = clientApiKey?.trim() || null
-  if (!providerApiKey && provider === 'gemini') {
-    providerApiKey = process.env.GEMINI_API_KEY ?? null
+  // A chave nunca trafega no chat — o servidor a recupera internamente do
+  // storage criptografado (ou do env de fallback do deploy, se configurado).
+  let apiKey: string
+  try {
+    apiKey = await resolveProviderApiKey(provider)
+  } catch (err) {
+    if (err instanceof MissingApiKeyError) {
+      return Response.json(
+        {
+          message: `Chave da LLM (${provider}) não configurada. Acesse LLM / Chaves para salvar a sua API key.`,
+          sources: [],
+        },
+        { status: 400 }
+      )
+    }
+    throw err
   }
-  if (!providerApiKey && provider === 'openai') {
-    providerApiKey = process.env.OPENAI_API_KEY ?? null
-  }
-
-  // Ollama é local e não precisa de chave
-  if (provider === 'ollama') {
-    providerApiKey = providerApiKey ?? ''
-  }
-
-  if (!providerApiKey && provider !== 'ollama') {
-    return Response.json(
-      {
-        message: `Chave da LLM (${provider}) não configurada. Acesse LLM / Chaves para salvar a sua API key.`,
-        sources: [],
-      },
-      { status: 400 }
-    )
-  }
-
-  const apiKey: string = providerApiKey ?? ''
 
   const sources = uniqueSources(relevantDocs.map(d => ({
     title: d.metadata.title,
@@ -324,9 +314,9 @@ export async function POST(req: NextRequest) {
             controller.enqueue(enc.encode(`\n\n__SOURCES__${JSON.stringify(sources)}`))
           }
         } catch (error) {
-          const errMsg = error instanceof Error ? error.message : String(error)
-          console.error(`[CHAT] ${provider} error:`, errMsg)
-          controller.enqueue(enc.encode(`\n\nErro: Falha ao consultar ${provider}. Detalhe: ${errMsg}`))
+          // Detalhe do erro fica só no log do servidor — nunca repassado ao chat.
+          console.error(`[CHAT] ${provider} error:`, error instanceof Error ? error.message : error)
+          controller.enqueue(enc.encode(`\n\nErro: Falha ao consultar ${provider}. Verifique se a chave configurada é válida.`))
         } finally {
           controller.close()
         }
@@ -350,10 +340,9 @@ export async function POST(req: NextRequest) {
       userMessage,
     })
   } catch (error) {
-    const errMsg = error instanceof Error ? error.message : String(error)
-    console.error('[CHAT] Gemini error:', errMsg)
+    console.error('[CHAT] Gemini error:', error instanceof Error ? error.message : error)
     return Response.json(
-      { message: `Falha ao consultar Gemini. Detalhe: ${errMsg}`, sources: [] },
+      { message: 'Falha ao consultar Gemini. Verifique se a chave configurada é válida.', sources: [] },
       { status: 200 }
     )
   }
@@ -397,9 +386,8 @@ export async function POST(req: NextRequest) {
           controller.enqueue(enc.encode(`\n\n__SOURCES__${JSON.stringify(sources)}`))
         }
       } catch (error) {
-        const errMsg = error instanceof Error ? error.message : String(error)
-        console.error('[CHAT] Gemini stream error:', errMsg)
-        controller.enqueue(enc.encode(`\n\nErro: Falha ao consultar Gemini. Detalhe: ${errMsg}`))
+        console.error('[CHAT] Gemini stream error:', error instanceof Error ? error.message : error)
+        controller.enqueue(enc.encode(`\n\nErro: Falha ao consultar Gemini. Verifique se a chave configurada é válida.`))
       } finally {
         controller.close()
       }

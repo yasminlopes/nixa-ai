@@ -12,7 +12,6 @@ export interface SendChatMessageParams {
   messages: MessageType[]
   userName?: string
   provider: Provider
-  apiKey?: string
   signal: AbortSignal
 }
 

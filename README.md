@@ -17,7 +17,7 @@ O projeto é **multi-LLM**: dá para alternar entre Gemini, OpenAI e Ollama (100
 - **Frontend/API**: Next.js 16 (App Router) · React 19 · TypeScript · SCSS Modules
 - **LLMs**: Gemini · OpenAI · Ollama
 - **RAG**: crawler próprio (Cheerio) · vector store em JSON local · busca híbrida (semântica + léxica) com re-rank · expansão de query PT→EN
-- **Segurança**: cada visitante guarda a própria API key só no localStorage do navegador — nunca em disco no servidor
+- **Segurança**: API keys criptografadas (AES-256-GCM) e guardadas só no servidor — nunca trafegam de volta pro navegador nem aparecem em `/api/chat`
 
 > Ollama funciona rodando o projeto localmente (o servidor precisa alcançar o `localhost` da sua máquina). Na [demo hospedada](https://nixa-ai.vercel.app), use Gemini ou OpenAI.
 
@@ -31,11 +31,14 @@ O projeto é **multi-LLM**: dá para alternar entre Gemini, OpenAI e Ollama (100
    pnpm install
    ```
 
-2. Crie o `.env.local` (baseado no `.env.local.example`) — opcional, só se você quiser um fallback compartilhado do site (visitantes sem chave própria usam essa):
+2. Crie o `.env.local` (baseado no `.env.local.example`):
 
    ```env
-   GEMINI_API_KEY=...   # https://aistudio.google.com/app/apikey
+   SETTINGS_ENCRYPTION_KEY=uma-chave-forte   # openssl rand -base64 48
+   GEMINI_API_KEY=...                        # opcional — fallback compartilhado; https://aistudio.google.com/app/apikey
    ```
+
+   `SETTINGS_ENCRYPTION_KEY` é obrigatória: é dela que deriva a chave AES-256-GCM usada pra criptografar as API keys salvas em disco.
 
 3. (Opcional) Para rodar 100% local com Ollama:
 
@@ -63,7 +66,13 @@ O projeto é **multi-LLM**: dá para alternar entre Gemini, OpenAI e Ollama (100
 
 4. Comece a conversar. As respostas citam as fontes da documentação usadas como contexto.
 
-As chaves de API são gerenciadas pela interface, em **LLM / Chaves** na sidebar, e ficam salvas só no seu navegador (localStorage) — nunca em disco no servidor. Isso evita depender de persistência em ambientes serverless (Vercel, por exemplo, tem filesystem somente leitura) e faz cada visitante usar a própria chave, sem compartilhar configuração com outros usuários do site.
+As chaves de API são gerenciadas pela interface, em **LLM / Chaves** na sidebar. O fluxo:
+
+1. Você salva a chave uma vez em **Configurações**.
+2. O servidor criptografa (AES-256-GCM) e grava em `data/settings.enc.json` (fora do git).
+3. Dali em diante, o navegador nunca mais vê nem reenvia a chave — `/api/chat` recebe só `{ provider, messages }` e o servidor busca a chave internamente. A interface mostra apenas uma versão mascarada (ex.: `AIza************kIjDs`).
+
+> **Limitação em serverless sem disco persistente** (ex.: Vercel): o arquivo `data/settings.enc.json` não sobrevive entre cold starts nessas plataformas, então a chave salva pode "sumir" depois de um tempo sem uso. Isso é inerente a rodar num FS efêmero, não um bug da aplicação. Pra produção nessas plataformas, troque `settings-store.ts` por um backend persistente (Vercel KV, Upstash Redis, um banco) — a lógica de criptografia (`core/settings/crypto.ts`) continua igual. Rodando local ou num servidor com disco próprio (Docker, VPS, Railway, etc.), a persistência funciona normalmente.
 
 ---
 

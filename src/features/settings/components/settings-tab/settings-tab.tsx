@@ -1,11 +1,12 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { AlertTriangle, Check, ShieldCheck } from 'lucide-react'
+import { AlertTriangle, Check, ShieldCheck, X } from 'lucide-react'
 import { type Provider } from '@/core/providers'
 import { ProviderIcon } from '@/shared/components/provider-icon'
 import { useIsHosted } from '@/shared/hooks/use-is-hosted'
-import { getStoredSettings, saveStoredSettings, hasKey } from '@/shared/utils/llm-settings-storage'
+import { fetchSettings, updateSettings, removeApiKey } from '@/shared/services/settings-service'
+import { saveStoredProvider } from '@/shared/utils/llm-settings-storage'
 import { SectionHeader } from '../section-header'
 import { OllamaModelsCard } from '../ollama-models-card'
 import styles from './settings-tab.module.scss'
@@ -16,69 +17,93 @@ const PROVIDERS: Array<{ id: Provider; label: string; placeholder: string }> = [
   { id: 'ollama', label: 'Ollama (local)', placeholder: 'Sem chave — define OLLAMA_BASE_URL no .env' },
 ]
 
-type SaveStatus = 'idle' | 'saved'
+type SaveStatus = 'idle' | 'saving' | 'saved' | 'error'
 
 export function SettingsTab() {
+  const [loading, setLoading] = useState(true)
   const [saveStatus, setSaveStatus] = useState<SaveStatus>('idle')
+  const [error, setError] = useState<string | null>(null)
   const [updatedAt, setUpdatedAt] = useState<string | null>(null)
   const [defaultProvider, setDefaultProvider] = useState<Provider>('gemini')
   const [initialProvider, setInitialProvider] = useState<Provider>('gemini')
   const [hasKeys, setHasKeys] = useState<Record<Provider, boolean>>({ gemini: false, openai: false, ollama: true })
+  const [maskedKeys, setMaskedKeys] = useState<Partial<Record<Provider, string>>>({})
   const [keyValue, setKeyValue] = useState('')
 
-  useEffect(() => {
-    const stored = getStoredSettings()
-    setDefaultProvider(stored.defaultProvider)
-    setInitialProvider(stored.defaultProvider)
-    setUpdatedAt(stored.updatedAt)
-    setHasKeys({
-      gemini: hasKey('gemini'),
-      openai: hasKey('openai'),
-      ollama: true,
-    })
-  }, [])
+  async function loadSettings() {
+    const settings = await fetchSettings()
+    setDefaultProvider(settings.defaultProvider)
+    setInitialProvider(settings.defaultProvider)
+    setUpdatedAt(settings.updatedAt)
+    setHasKeys(settings.hasKeys)
+    setMaskedKeys(settings.maskedKeys)
+    setLoading(false)
+  }
+
+  useEffect(() => { loadSettings() }, [])
 
   function selectProvider(p: Provider) {
     setDefaultProvider(p)
     setKeyValue('')
     setSaveStatus('idle')
+    setError(null)
   }
 
   function onKeyChange(value: string) {
     setKeyValue(value)
-    if (saveStatus === 'saved') setSaveStatus('idle')
+    if (saveStatus !== 'idle') setSaveStatus('idle')
   }
 
   const hasChanges =
     defaultProvider !== initialProvider ||
     keyValue.trim().length > 0
 
-  function handleSave() {
+  async function handleSave() {
     if (!hasChanges) return
-    const apiKeys = keyValue.trim() ? { [defaultProvider]: keyValue.trim() } : {}
-    const saved = saveStoredSettings({ defaultProvider, apiKeys })
-    setUpdatedAt(saved.updatedAt)
-    setHasKeys({
-      gemini: hasKey('gemini'),
-      openai: hasKey('openai'),
-      ollama: true,
-    })
-    setKeyValue('')
-    setInitialProvider(defaultProvider)
-    setSaveStatus('saved')
+    setSaveStatus('saving')
+    setError(null)
+    try {
+      const apiKeys = keyValue.trim() ? { [defaultProvider]: keyValue.trim() } : undefined
+      const saved = await updateSettings({ defaultProvider, apiKeys })
+      saveStoredProvider(defaultProvider)
+      setUpdatedAt(saved.updatedAt)
+      setHasKeys(saved.hasKeys)
+      setMaskedKeys(saved.maskedKeys)
+      setKeyValue('')
+      setInitialProvider(defaultProvider)
+      setSaveStatus('saved')
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Falha ao salvar configurações')
+      setSaveStatus('error')
+    }
+  }
+
+  async function handleRemoveKey() {
+    setError(null)
+    try {
+      const saved = await removeApiKey(defaultProvider)
+      setHasKeys(saved.hasKeys)
+      setMaskedKeys(saved.maskedKeys)
+      setUpdatedAt(saved.updatedAt)
+      setKeyValue('')
+      setSaveStatus('idle')
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Falha ao remover a chave')
+    }
   }
 
   const current = PROVIDERS.find(p => p.id === defaultProvider)!
   const isOllama = defaultProvider === 'ollama'
   const isHosted = useIsHosted()
-  const saveDisabled = saveStatus === 'saved' || !hasChanges
+  const saveDisabled = loading || saveStatus === 'saving' || saveStatus === 'saved' || !hasChanges
+  const maskedKey = maskedKeys[defaultProvider]
 
   return (
     <div>
       <SectionHeader
         eyebrow="Provedores"
         title="LLM e chaves."
-        subtitle="Escolha o modelo padrão e configure as chaves — salvas só neste navegador."
+        subtitle="Escolha o modelo padrão e configure as chaves — armazenadas criptografadas no servidor."
       />
 
       <div className={styles.providerChips}>
@@ -123,13 +148,27 @@ export function SettingsTab() {
         </div>
 
         {!isOllama && (
-          <input
-            type="password"
-            value={keyValue}
-            onChange={e => onKeyChange(e.target.value)}
-            placeholder={hasKeys[defaultProvider] ? '••••••••• (deixe vazio para manter)' : current.placeholder}
-            className={styles.keyInput}
-          />
+          <>
+            <input
+              type="password"
+              value={keyValue}
+              onChange={e => onKeyChange(e.target.value)}
+              placeholder={maskedKey ?? current.placeholder}
+              className={styles.keyInput}
+              autoComplete="off"
+            />
+            {hasKeys[defaultProvider] && (
+              <div className={styles.keyStatusRow}>
+                <span className={styles.keyStatusText}>
+                  Chave atual: <code className={styles.inlineCode}>{maskedKey}</code>
+                </span>
+                <button onClick={handleRemoveKey} className={styles.removeKeyButton} type="button">
+                  <X className="w-3 h-3" />
+                  Remover
+                </button>
+              </div>
+            )}
+          </>
         )}
 
         {isOllama && (
@@ -173,7 +212,7 @@ export function SettingsTab() {
       <div className={styles.footerNotice}>
         <ShieldCheck className={styles.footerNoticeIcon} />
         <span>
-          Salvo só neste navegador (localStorage) — nunca compartilhado com outros visitantes do site.
+          Chaves criptografadas (AES-256-GCM) e armazenadas só no servidor — nunca trafegam de volta pro navegador.
           {updatedAt && (
             <span className={styles.footerNoticeMuted}>
               {' '}· salvo em {new Date(updatedAt).toLocaleString('pt-BR')}
@@ -181,6 +220,8 @@ export function SettingsTab() {
           )}
         </span>
       </div>
+
+      {error && <p className={styles.errorText}>{error}</p>}
 
       <div className={styles.submitRow}>
         <button
@@ -201,13 +242,14 @@ export function SettingsTab() {
               : '1px solid transparent',
           }}
         >
+          {saveStatus === 'saving' && 'Salvando…'}
           {saveStatus === 'saved' && (
             <>
               <Check size={14} strokeWidth={2.75} />
               Salvo
             </>
           )}
-          {saveStatus === 'idle' && (hasChanges ? 'Salvar' : 'Sem alterações')}
+          {(saveStatus === 'idle' || saveStatus === 'error') && (hasChanges ? 'Salvar' : 'Sem alterações')}
         </button>
       </div>
     </div>

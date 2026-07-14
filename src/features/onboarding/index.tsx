@@ -13,7 +13,8 @@ import {
 import clsx from 'clsx'
 import { ProviderIcon } from '@/shared/components/provider-icon'
 import { useIsHosted } from '@/shared/hooks/use-is-hosted'
-import { getStoredSettings, saveStoredSettings, hasKey } from '@/shared/utils/llm-settings-storage'
+import { fetchSettings, updateSettings } from '@/shared/services/settings-service'
+import { saveStoredProvider } from '@/shared/utils/llm-settings-storage'
 import { type Provider } from '@/core/providers'
 import styles from './index.module.scss'
 
@@ -98,23 +99,20 @@ export function OnboardingView() {
     finally { setCheckingDocs(false) }
   }
 
-  function loadSettings() {
-    const stored = getStoredSettings()
-    setProvider(stored.defaultProvider)
-    setHasKeys({
-      gemini: hasKey('gemini'),
-      openai: hasKey('openai'),
-      ollama: true,
-    })
+  async function loadSettings() {
+    const settings = await fetchSettings()
+    setProvider(settings.defaultProvider)
+    setHasKeys(settings.hasKeys)
   }
 
-  function persistProviderSelection() {
+  async function persistProviderSelection() {
     setError(null)
     try {
-      saveStoredSettings({ defaultProvider: provider })
+      saveStoredProvider(provider)
+      await updateSettings({ defaultProvider: provider })
       return true
     } catch {
-      setError('Falha ao salvar o modelo escolhido neste navegador.')
+      setError('Falha ao salvar o modelo escolhido.')
       return false
     }
   }
@@ -131,7 +129,7 @@ export function OnboardingView() {
 
   async function handleContinue() {
     if (step === 1 && !name.trim()) return
-    if (step === 3) { const ok = persistProviderSelection(); if (!ok) return }
+    if (step === 3) { const ok = await persistProviderSelection(); if (!ok) return }
     if (step === 4) {
       localStorage.setItem('nixa-user-name', name.trim())
       localStorage.setItem('nixa-onboarding-v1', 'done')

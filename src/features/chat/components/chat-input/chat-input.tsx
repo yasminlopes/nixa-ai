@@ -1,7 +1,7 @@
 'use client'
 
 import { useRef, useEffect, type KeyboardEvent } from 'react'
-import { ArrowUp, Square, Paperclip } from 'lucide-react'
+import { ArrowUp, Square } from 'lucide-react'
 import clsx from 'clsx'
 import { type Provider } from '../../types'
 import { ProviderSelect } from '@/shared/components/provider-select'
@@ -64,9 +64,6 @@ export function ChatInput({
 
         <div className={styles.toolbar}>
           <div className={styles.toolbarLeft}>
-            <button type="button" className={styles.attachButton} title="Anexar">
-              <Paperclip size={14} />
-            </button>
             <ProviderSelect
               value={provider}
               onChange={p => onProviderChange?.(p)}

@@ -121,8 +121,9 @@ export async function POST(req: NextRequest) {
             send(`   ✓ ${chunks.length} chunks (${page.pageType}) — "${page.title}"`)
           } catch (embedErr) {
             errors++
-            const msg = embedErr instanceof Error ? embedErr.message : String(embedErr)
-            send(`   ⚠️ falha no embedding desta página, pulando: ${msg.slice(0, 120)}`)
+            // Detalhe fica só no log do servidor — nunca repassado ao cliente.
+            console.error('[INDEX-DOCS] embedding error:', embedErr instanceof Error ? embedErr.message : embedErr)
+            send(`   ⚠️ falha no embedding desta página, pulando`)
             // Não interrompe a indexação geral — continua próximo URL
           }
 
@@ -147,7 +148,8 @@ export async function POST(req: NextRequest) {
         send(`   Base total        : ${initialStats.count} → ${finalStats.count} chunks`)
         send(`   Fontes distintas  : ${finalStats.sources.length}`)
       } catch (err) {
-        send(`❌ Erro: ${err instanceof Error ? err.message : String(err)}`)
+        console.error('[INDEX-DOCS] fatal error:', err instanceof Error ? err.message : err)
+        send('❌ Erro ao indexar. Veja os logs do servidor para detalhes.')
       } finally {
         controller.close()
       }

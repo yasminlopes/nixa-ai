@@ -24,7 +24,8 @@ const FLOW_INGEST = ['docs', 'crawler', 'chunks', 'embeddings', 'vectorstore']
 const FLOW_QUERY = ['pergunta', 'retrieval', 'contexto', 'LLM', 'resposta']
 
 const ENV_VARS: Array<[string, string]> = [
-  ['GEMINI_API_KEY', 'Opcional — fallback compartilhado do site (visitantes usam a própria chave)'],
+  ['SETTINGS_ENCRYPTION_KEY', 'Obrigatória — deriva a chave AES-256-GCM que criptografa as API keys no servidor'],
+  ['GEMINI_API_KEY', 'Opcional — fallback compartilhado do site, caso ninguém tenha salvo uma chave'],
   ['OLLAMA_BASE_URL', 'Default http://localhost:11434'],
   ['OLLAMA_MODEL', 'Default llama3.2:1b'],
   ['OLLAMA_EMBEDDING_MODEL', 'Default all-minilm'],

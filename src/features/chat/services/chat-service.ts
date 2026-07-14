@@ -26,7 +26,6 @@ export async function* sendChatMessage(params: SendChatMessageParams): AsyncGene
       messages: params.messages,
       userName: params.userName,
       provider: params.provider,
-      apiKey: params.apiKey,
     }),
     signal: params.signal,
   })
