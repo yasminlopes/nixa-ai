@@ -22,7 +22,7 @@ type SettingsPayload = {
 const PROVIDERS: Array<{ id: Provider; label: string; description: string }> = [
   { id: 'gemini', label: 'Gemini',  description: 'Rápido e estável, ideal para uso geral. Tier gratuito disponível.' },
   { id: 'openai', label: 'OpenAI',  description: 'Respostas amplas e consistentes.' },
-  { id: 'ollama', label: 'Ollama',  description: 'Roda 100% local, sem chave nem custo. Exige Ollama instalado.' },
+  { id: 'ollama', label: 'Ollama',  description: 'Roda 100% local, sem chave nem custo. Exige Ollama instalado e o projeto rodando na sua máquina.' },
 ]
 
 const STEPS = ['Boas-vindas', 'Seu nome', 'Indexação', 'Modelo', 'Pronto']

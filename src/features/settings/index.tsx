@@ -567,6 +567,8 @@ function SettingsTab() {
 
   const current = PROVIDERS.find(p => p.id === defaultProvider)!
   const isOllama = defaultProvider === 'ollama'
+  const isHosted = typeof window !== 'undefined' &&
+    !['localhost', '127.0.0.1', '0.0.0.0'].includes(window.location.hostname)
   const saveDisabled = loading || saveStatus === 'saving' || saveStatus === 'saved' || !hasChanges
 
   return (
@@ -652,6 +654,41 @@ function SettingsTab() {
           </p>
         )}
       </div>
+
+      {isOllama && isHosted && (
+        <div
+          className="mt-4 rounded-[14px] px-4 py-3.5"
+          style={{
+            background: 'var(--color-surface-2)',
+            border: '1px solid var(--color-border)',
+          }}
+        >
+          <div className="flex items-start gap-2.5">
+            <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" style={{ color: 'var(--color-accent)' }} />
+            <div className="min-w-0">
+              <p className="text-[12.5px] leading-relaxed" style={{ color: 'var(--color-text-soft)' }}>
+                <span className="font-medium" style={{ color: 'var(--color-text)' }}>
+                  O Ollama só funciona rodando o projeto na sua máquina.
+                </span>{' '}
+                Na versão hospedada, o servidor não alcança o{' '}
+                <code className="font-mono text-[11.5px] px-1.5 py-0.5 rounded"
+                  style={{ background: 'var(--color-surface)' }}>localhost</code>
+                {' '}do seu computador — use Gemini ou OpenAI. Para usar 100% local e sem custo, clone o repositório.
+                O projeto é open source, contribuições são bem-vindas!
+              </p>
+              <a
+                href="https://github.com/yasminlopes/nixa-ai"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mt-3 inline-flex items-center gap-1.5 rounded-full px-4 py-1.5 text-[12px] font-medium transition-all hover:scale-[1.02] active:scale-[0.98]"
+                style={{ background: 'var(--color-ink)', color: 'var(--color-ink-text)' }}
+              >
+                Ver no GitHub
+              </a>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Ollama help card — modelos recomendados */}
       {isOllama && <OllamaModelsCard />}

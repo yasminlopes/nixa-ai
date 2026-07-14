@@ -3,5 +3,6 @@ node_modules/
 .env.local
 data/vectorstore.json
 *.log
+*.tsbuildinfo
 .bun
 /.bun
