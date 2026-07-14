@@ -3,8 +3,8 @@
 import { useEffect, useState } from 'react'
 import { Message as MessageType } from '@/shared/types'
 import { cn } from '@/shared/utils/cn'
-import { ChatBubble } from './ChatBubble'
-import { Avatar } from '@/shared/components/Avatar'
+import { ChatBubble } from './chat-bubble'
+import { Avatar } from '@/shared/components/avatar'
 
 interface MessageProps {
   message: MessageType

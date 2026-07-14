@@ -4,7 +4,7 @@ import { useRef, useEffect, KeyboardEvent } from 'react'
 import { ArrowUp, Square, Paperclip } from 'lucide-react'
 import { cn } from '@/shared/utils/cn'
 import { type Provider } from '@/core/providers'
-import { ProviderSelect } from '@/shared/components/ProviderSelect'
+import { ProviderSelect } from '@/shared/components/provider-select'
 
 interface MessageInputProps {
   value: string

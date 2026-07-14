@@ -8,8 +8,8 @@ import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter'
 import { oneDark } from 'react-syntax-highlighter/dist/esm/styles/prism'
 import { Source } from '@/shared/types'
 import { cn } from '@/shared/utils/cn'
-import { useCopy } from '@/shared/hooks/useCopy'
-import { TypingIndicator } from './TypingIndicator'
+import { useCopy } from '@/shared/hooks/use-copy'
+import { TypingIndicator } from './typing-indicator'
 
 interface ChatBubbleProps {
   content: string

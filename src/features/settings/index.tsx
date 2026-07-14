@@ -16,9 +16,9 @@ import {
   Copy,
 } from 'lucide-react'
 import { type Provider } from '@/core/providers'
-import { ProviderIcon } from '@/shared/components/ProviderIcon'
-import { LlamaIcon } from '@/shared/components/LlamaIcon'
-import { ThemeToggle } from '@/shared/components/ThemeToggle'
+import { ProviderIcon } from '@/shared/components/provider-icon'
+import { LlamaIcon } from '@/shared/components/llama-icon'
+import { ThemeToggle } from '@/shared/components/theme-toggle'
 
 export type WorkspaceTab = 'profile' | 'index' | 'settings' | 'about'
 

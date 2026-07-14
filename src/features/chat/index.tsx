@@ -4,8 +4,8 @@ import { useEffect, useRef, useState } from 'react'
 import { Database } from 'lucide-react'
 import { Message as MessageType, Conversation, Source } from '@/shared/types'
 import { type Provider } from '@/core/providers'
-import { Message } from '../components/Message'
-import { MessageInput } from '../components/MessageInput'
+import { Message } from './components/message'
+import { MessageInput } from './components/message-input'
 
 type SettingsPayload = {
   defaultProvider: Provider

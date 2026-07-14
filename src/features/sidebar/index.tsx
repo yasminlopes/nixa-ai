@@ -11,7 +11,7 @@ import {
 } from 'lucide-react'
 import { Conversation } from '@/shared/types'
 import { cn } from '@/shared/utils/cn'
-import { WorkspaceModal, WorkspaceTab } from '@/features/settings/containers/WorkspaceModal'
+import { WorkspaceModal, WorkspaceTab } from '@/features/settings'
 
 interface SidebarProps {
   activeId: string | null

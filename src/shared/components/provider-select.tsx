@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'react'
 import { Check, ChevronDown, Lock } from 'lucide-react'
 import { cn } from '@/shared/utils/cn'
 import { PROVIDERS, type Provider } from '@/core/providers'
-import { ProviderIcon } from './ProviderIcon'
+import { ProviderIcon } from './provider-icon'
 
 export interface ProviderOption {
   value: Provider
