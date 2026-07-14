@@ -1,55 +1,68 @@
 'use client'
 
-import { createContext, useContext, useEffect, useState, ReactNode } from 'react'
+import { createContext, useContext, useEffect, useState, useCallback, ReactNode } from 'react'
 
 type Theme = 'light' | 'dark'
+export type ThemeMode = 'light' | 'dark' | 'system'
+
+const STORAGE_KEY = 'nixa-theme'
 
 interface ThemeContextType {
   theme: Theme
-  toggleTheme: () => void
-  setTheme: (theme: Theme) => void
+  mode: ThemeMode
+  setMode: (mode: ThemeMode) => void
 }
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined)
 
-export function ThemeProvider({ children }: { children: ReactNode }) {
-  const [theme, setThemeState] = useState<Theme>('light')
-  const [mounted, setMounted] = useState(false)
+function systemPrefersDark(): boolean {
+  return typeof window !== 'undefined' && window.matchMedia('(prefers-color-scheme: dark)').matches
+}
 
+function resolveTheme(mode: ThemeMode): Theme {
+  if (mode === 'system') return systemPrefersDark() ? 'dark' : 'light'
+  return mode
+}
+
+function applyTheme(theme: Theme) {
+  document.documentElement.classList.toggle('dark', theme === 'dark')
+}
+
+export function ThemeProvider({ children }: { children: ReactNode }) {
+  const [mode, setModeState] = useState<ThemeMode>('system')
+  const [theme, setTheme] = useState<Theme>('light')
+
+  // A classe .dark já foi aplicada no <html> pelo script pré-paint (layout.tsx).
+  // Aqui só sincronizamos o state React com a preferência salva e com a classe
+  // que já está na tela — sem tocar no DOM, logo sem flash.
   useEffect(() => {
-    setMounted(true)
-    const savedTheme = localStorage.getItem('nixa-theme') as Theme | null
-    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
-    
-    const initialTheme = savedTheme || (prefersDark ? 'dark' : 'light')
-    setThemeState(initialTheme)
-    
-    if (initialTheme === 'dark') {
-      document.documentElement.classList.add('dark')
-    }
+    const saved = localStorage.getItem(STORAGE_KEY) as ThemeMode | null
+    setModeState(saved ?? 'system')
+    setTheme(document.documentElement.classList.contains('dark') ? 'dark' : 'light')
   }, [])
 
-  const setTheme = (newTheme: Theme) => {
-    setThemeState(newTheme)
-    localStorage.setItem('nixa-theme', newTheme)
-    
-    if (newTheme === 'dark') {
-      document.documentElement.classList.add('dark')
-    } else {
-      document.documentElement.classList.remove('dark')
+  useEffect(() => {
+    if (mode !== 'system') return
+    const mql = window.matchMedia('(prefers-color-scheme: dark)')
+    const onChange = () => {
+      const next: Theme = mql.matches ? 'dark' : 'light'
+      setTheme(next)
+      applyTheme(next)
     }
-  }
+    mql.addEventListener('change', onChange)
+    return () => mql.removeEventListener('change', onChange)
+  }, [mode])
 
-  const toggleTheme = () => {
-    setTheme(theme === 'light' ? 'dark' : 'light')
-  }
-
-  if (!mounted) {
-    return <>{children}</>
-  }
+  const setMode = useCallback((newMode: ThemeMode) => {
+    setModeState(newMode)
+    localStorage.setItem(STORAGE_KEY, newMode)
+    const resolved = resolveTheme(newMode)
+    setTheme(resolved)
+    applyTheme(resolved)
+  }, [])
 
   return (
-    <ThemeContext.Provider value={{ theme, toggleTheme, setTheme }}>
+    <ThemeContext.Provider value={{ theme, mode, setMode }}>
       {children}
     </ThemeContext.Provider>
   )

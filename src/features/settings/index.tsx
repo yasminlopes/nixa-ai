@@ -2,22 +2,47 @@
 
 import { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { X, BookOpen, Settings, User, Layers } from 'lucide-react'
+import { X, BookOpen, Sparkles, User, Palette, Layers, AlertTriangle, type LucideIcon } from 'lucide-react'
 import clsx from 'clsx'
-import { ThemeToggle } from '@/shared/components/theme-toggle'
 import { ProfileTab } from './components/profile-tab'
+import { AppearanceTab } from './components/appearance-tab'
 import { IndexTab } from './components/index-tab'
 import { SettingsTab } from './components/settings-tab'
 import { AboutTab } from './components/about-tab'
+import { DangerTab } from './components/danger-tab'
 import styles from './index.module.scss'
 
-export type WorkspaceTab = 'profile' | 'index' | 'settings' | 'about'
+export type WorkspaceTab = 'profile' | 'appearance' | 'index' | 'settings' | 'about' | 'danger'
 
-const TABS: Array<{ id: WorkspaceTab; label: string; icon: React.ComponentType<{ className?: string }> }> = [
-  { id: 'profile',  label: 'Perfil',        icon: User },
-  { id: 'index',    label: 'Indexação',     icon: BookOpen },
-  { id: 'settings', label: 'LLM e chaves',  icon: Settings },
-  { id: 'about',    label: 'Sobre',         icon: Layers },
+interface NavItem {
+  id: WorkspaceTab
+  label: string
+  icon: LucideIcon
+  danger?: boolean
+}
+
+const NAV_GROUPS: Array<{ label: string; items: NavItem[] }> = [
+  {
+    label: 'Conta',
+    items: [
+      { id: 'profile', label: 'Perfil', icon: User },
+      { id: 'appearance', label: 'Aparência', icon: Palette },
+    ],
+  },
+  {
+    label: 'Nixa AI',
+    items: [
+      { id: 'index', label: 'Conhecimento', icon: BookOpen },
+      { id: 'settings', label: 'Modelos de IA', icon: Sparkles },
+    ],
+  },
+  {
+    label: 'Sistema',
+    items: [
+      { id: 'about', label: 'Sobre a Nixa', icon: Layers },
+      { id: 'danger', label: 'Zona de perigo', icon: AlertTriangle, danger: true },
+    ],
+  },
 ]
 
 interface WorkspaceModalProps {
@@ -40,8 +65,8 @@ export function WorkspaceModal({ initialTab, onClose }: WorkspaceModalProps) {
   }
 
   useEffect(() => {
-    function handleKeyDown(e: KeyboardEvent) {
-      if (e.key !== 'Escape') return
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key !== 'Escape') return
       if (showCloseConfirm) { setShowCloseConfirm(false); return }
       handleRequestClose()
     }
@@ -54,12 +79,11 @@ export function WorkspaceModal({ initialTab, onClose }: WorkspaceModalProps) {
   return createPortal(
     <div
       className={styles.overlay}
-      onMouseDown={e => { if (e.target === e.currentTarget) handleRequestClose() }}
+      onMouseDown={event => { if (event.target === event.currentTarget) handleRequestClose() }}
     >
       <div className={styles.modal}>
         <div className={styles.grid}>
 
-          {/* Nav sidebar */}
           <aside className={styles.nav}>
             <div className={styles.navHeader}>
               <span className={styles.navTitle}>Ajustes</span>
@@ -69,47 +93,52 @@ export function WorkspaceModal({ initialTab, onClose }: WorkspaceModalProps) {
             </div>
 
             <nav className={styles.tabList}>
-              {TABS.map(item => {
-                const Icon = item.icon
-                const active = tab === item.id
-                const locked = isIndexing && item.id !== 'index'
-                return (
-                  <button
-                    key={item.id}
-                    onClick={() => !locked && setTab(item.id)}
-                    disabled={locked}
-                    title={locked ? 'Indisponível durante a indexação' : undefined}
-                    className={clsx(styles.tabButton, active && styles.tabButtonActive, locked && styles.tabButtonLocked)}
-                  >
-                    {active && <span className={styles.tabIndicator} />}
-                    <Icon className={styles.tabIcon} />
-                    {item.label}
-                  </button>
-                )
-              })}
+              {NAV_GROUPS.map(group => (
+                <div key={group.label} className={styles.navGroup}>
+                  <p className={styles.navGroupLabel}>{group.label}</p>
+                  {group.items.map(item => {
+                    const Icon = item.icon
+                    const active = tab === item.id
+                    const locked = isIndexing && item.id !== 'index'
+                    return (
+                      <button
+                        key={item.id}
+                        onClick={() => !locked && setTab(item.id)}
+                        disabled={locked}
+                        title={locked ? 'Indisponível durante a indexação' : undefined}
+                        className={clsx(
+                          styles.tabButton,
+                          active && styles.tabButtonActive,
+                          locked && styles.tabButtonLocked,
+                          item.danger && styles.tabButtonDanger
+                        )}
+                      >
+                        {active && <span className={clsx(styles.tabIndicator, item.danger && styles.tabIndicatorDanger)} />}
+                        <Icon className={styles.tabIcon} />
+                        {item.label}
+                      </button>
+                    )
+                  })}
+                </div>
+              ))}
             </nav>
-
-            <div className={styles.themeRow}>
-              <span className={styles.themeLabel}>Tema</span>
-              <ThemeToggle />
-            </div>
           </aside>
 
-          {/* Content */}
           <section className={styles.content}>
-            {tab === 'profile'  && <ProfileTab />}
-            {tab === 'index'    && <IndexTab onRunningChange={setIsIndexing} />}
-            {tab === 'settings' && <SettingsTab />}
-            {tab === 'about'    && <AboutTab />}
+            {tab === 'profile'    && <ProfileTab />}
+            {tab === 'appearance' && <AppearanceTab />}
+            {tab === 'index'      && <IndexTab onRunningChange={setIsIndexing} onClose={onClose} />}
+            {tab === 'settings'   && <SettingsTab />}
+            {tab === 'about'      && <AboutTab />}
+            {tab === 'danger'     && <DangerTab />}
           </section>
         </div>
       </div>
 
-      {/* Close confirm */}
       {showCloseConfirm && (
         <div
           className={styles.confirmOverlay}
-          onMouseDown={e => { if (e.target === e.currentTarget) setShowCloseConfirm(false) }}
+          onMouseDown={event => { if (event.target === event.currentTarget) setShowCloseConfirm(false) }}
         >
           <div className={styles.confirmModal}>
             <div className={styles.confirmHeader}>

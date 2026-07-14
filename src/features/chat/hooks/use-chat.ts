@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
-import { fetchSettings, updateSettings } from '@/shared/services/settings-service'
 import { getStoredProvider, saveStoredProvider } from '@/shared/utils/llm-settings-storage'
+import { getApiKeyMap, getKeyStatus } from '@/shared/utils/api-key-storage'
 import { sendChatMessage } from '../services/chat-service'
 import { type ChatViewProps, type Conversation, type MessageType, type Provider } from '../types'
 
@@ -20,24 +20,22 @@ export function useChat({ conversationId, onConversationSaved }: ChatViewProps) 
       const stored = localStorage.getItem('nixa-conversations')
       if (stored) {
         const convs: Conversation[] = JSON.parse(stored)
-        const conv = convs.find(c => c.id === conversationId)
-        if (conv) setMessages(conv.messages)
+        const conversation = convs.find(item => item.id === conversationId)
+        if (conversation) setMessages(conversation.messages)
       }
-    } catch { /* ignore */ }
+    } catch { }
   }, [conversationId])
 
   useEffect(() => {
     fetch('/api/index-docs')
-      .then(r => r.json())
-      .then((d: { count: number }) => setDocsCount(d.count))
+      .then(response => response.json())
+      .then((data: { count: number }) => setDocsCount(data.count))
       .catch(() => setDocsCount(0))
   }, [])
 
   useEffect(() => {
-    fetchSettings().then(settings => {
-      setProvider(settings.defaultProvider)
-      setHasKeys(settings.hasKeys)
-    })
+    setProvider(getStoredProvider() ?? 'gemini')
+    setHasKeys(getKeyStatus())
   }, [])
 
   useEffect(() => {
@@ -45,15 +43,15 @@ export function useChat({ conversationId, onConversationSaved }: ChatViewProps) 
   }, [messages])
 
   function saveConversation(msgs: MessageType[]) {
-    const title = msgs.find(m => m.role === 'user')?.content.slice(0, 60) ?? 'Nova conversa'
+    const title = msgs.find(message => message.role === 'user')?.content.slice(0, 60) ?? 'Nova conversa'
     const stored = localStorage.getItem('nixa-conversations')
     const convs: Conversation[] = stored ? JSON.parse(stored) : []
-    const existing = convs.find(c => c.id === (conversationId ?? ''))
+    const existing = convs.find(conversation => conversation.id === (conversationId ?? ''))
     const now = new Date()
     let updated: Conversation[], savedConv: Conversation
     if (existing) {
       savedConv = { ...existing, messages: msgs, updatedAt: now }
-      updated = convs.map(c => (c.id === savedConv.id ? savedConv : c))
+      updated = convs.map(conversation => (conversation.id === savedConv.id ? savedConv : conversation))
     } else {
       savedConv = { id: crypto.randomUUID(), title, messages: msgs, createdAt: now, updatedAt: now }
       updated = [savedConv, ...convs]
@@ -79,27 +77,28 @@ export function useChat({ conversationId, onConversationSaved }: ChatViewProps) 
         messages: [...messages, userMsg],
         userName: localStorage.getItem('nixa-user-name') ?? undefined,
         provider,
+        apiKeys: getApiKeyMap(),
         signal: abortRef.current.signal,
       })
 
       let finalMessages = newMessages
       for await (const chunk of stream) {
-        finalMessages = newMessages.map(m =>
-          m.id === aiMsg.id ? { ...m, content: chunk.content, sources: chunk.sources } : m
+        finalMessages = newMessages.map(message =>
+          message.id === aiMsg.id ? { ...message, content: chunk.content, sources: chunk.sources } : message
         )
         setMessages(finalMessages)
       }
       saveConversation(finalMessages)
-    } catch (err: unknown) {
-      if (err instanceof Error && err.name === 'AbortError') {
-        setMessages(prev => prev.map(m =>
-          m.id === aiMsg.id ? { ...m, content: m.content || '__interrupted__' } : m
+    } catch (error: unknown) {
+      if (error instanceof Error && error.name === 'AbortError') {
+        setMessages(prev => prev.map(message =>
+          message.id === aiMsg.id ? { ...message, content: message.content || '__interrupted__' } : message
         ))
       } else {
-        setMessages(prev => prev.map(m =>
-          m.id === aiMsg.id
-            ? { ...m, content: `❌ Erro ao gerar resposta. Detalhe: ${err instanceof Error ? err.message : String(err)}` }
-            : m
+        setMessages(prev => prev.map(message =>
+          message.id === aiMsg.id
+            ? { ...message, content: `❌ Erro ao gerar resposta. Detalhe: ${error instanceof Error ? error.message : String(error)}` }
+            : message
         ))
       }
     } finally {
@@ -116,7 +115,6 @@ export function useChat({ conversationId, onConversationSaved }: ChatViewProps) 
   function handleProviderChange(nextProvider: Provider) {
     setProvider(nextProvider)
     saveStoredProvider(nextProvider)
-    updateSettings({ defaultProvider: nextProvider }).catch(() => { /* mantém seleção local mesmo se a sync falhar */ })
   }
 
   const isStreaming = isLoading && messages[messages.length - 1]?.role === 'assistant'

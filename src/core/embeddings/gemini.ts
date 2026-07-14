@@ -1,16 +1,13 @@
 import { GoogleGenerativeAI } from '@google/generative-ai'
 import { EmbeddingResult } from './types'
 
-const IS_FREE_TIER = process.env.FREE_TIER === 'true'
-
-// Free tier: text-embedding-004 primeiro (768 dims, quota mais estável)
-// Paid tier: gemini-embedding-001 primeiro (3072 dims, maior qualidade)
-// AVISO: trocar entre tiers exige re-indexação (dimensões diferentes)
+// Ordem de fallback fixa. text-embedding-004 (768 dims) primeiro: funciona em
+// chaves free e é estável. Trocar o modelo default exige re-indexar (dimensões
+// diferentes) — por isso não é mais um toggle de ambiente.
 const EMBEDDING_CANDIDATE_MODELS = [
   process.env.GEMINI_EMBEDDING_MODEL,
-  ...(IS_FREE_TIER
-    ? ['text-embedding-004', 'gemini-embedding-001']
-    : ['gemini-embedding-001', 'text-embedding-004']),
+  'text-embedding-004',
+  'gemini-embedding-001',
   'embedding-001',
 ].filter(Boolean) as string[]
 
@@ -33,14 +30,12 @@ function isRateLimitError(error: unknown): boolean {
 function parseRetryDelay(error: unknown, attempt: number): number {
   const message = String((error as { message?: string })?.message ?? '')
   const match = message.match(/retry[^\d]*(\d+(?:\.\d+)?)\s*s/i)
-  
-  // If server says wait X seconds, use that
+
   if (match) {
     const serverDelay = Math.ceil(parseFloat(match[1])) * 1000
     return serverDelay
   }
-  
-  // Otherwise use exponential backoff: 60s, 90s, 120s for attempts 1, 2, 3
+
   const exponentialDelay = (attempt + 1) * 30_000
   return Math.min(exponentialDelay, 120_000)
 }
@@ -57,20 +52,20 @@ export async function getGeminiEmbedding(
   for (const model of EMBEDDING_CANDIDATE_MODELS) {
     for (let attempt = 0; attempt < 4; attempt++) {
       try {
-        const m = genAI.getGenerativeModel({ model })
-        const r = await m.embedContent(safe)
-        return { embedding: r.embedding.values, model, cached: false }
-      } catch (err) {
-        lastErr = err
+        const generativeModel = genAI.getGenerativeModel({ model })
+        const response = await generativeModel.embedContent(safe)
+        return { embedding: response.embedding.values, model, cached: false }
+      } catch (error) {
+        lastErr = error
 
-        if (isRateLimitError(err)) {
-          const wait = parseRetryDelay(err, attempt)
+        if (isRateLimitError(error)) {
+          const wait = parseRetryDelay(error, attempt)
           if (onWarning) onWarning(`Gemini rate limit (429). Aguardando ${Math.round(wait / 1000)}s... (tentativa ${attempt + 1}/4)`)
-          await new Promise(r => setTimeout(r, wait))
+          await new Promise(resolve => setTimeout(resolve, wait))
           continue
         }
 
-        if (!isEmbeddingUnavailableError(err)) throw err
+        if (!isEmbeddingUnavailableError(error)) throw error
 
         if (onWarning) onWarning(`Modelo de embedding Gemini "${model}" indisponível. Tentando próximo...`)
         break

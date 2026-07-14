@@ -1,0 +1,69 @@
+@use '../../styles/tokens';
+
+$body-line-height: 1.6;
+$body-font-size: 12.5px;
+
+.callout {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  border-radius: var(--radius-lg);
+  padding: 12px 14px;
+}
+
+// A caixa do ícone tem a MESMA altura da primeira linha do texto e centraliza
+// o ícone nela. Assim o ícone alinha com a 1ª linha, não importa quantas linhas
+// o corpo tenha — mata de vez o desalinhamento ícone/texto.
+.iconWrap {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  height: calc(#{$body-font-size} * #{$body-line-height});
+}
+
+.body {
+  flex: 1;
+  min-width: 0;
+  font-size: $body-font-size;
+  line-height: $body-line-height;
+  color: var(--color-text-soft);
+}
+
+.title {
+  font-size: 13px;
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text);
+  margin-bottom: 2px;
+}
+
+// ─── Tons ──────────────────────────────────────────────────────────────────
+
+.neutral {
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+
+  .icon {
+    color: var(--color-accent);
+  }
+}
+
+.accent {
+  background: var(--color-accent-soft);
+  border: 1px solid var(--color-accent);
+
+  .icon {
+    color: var(--color-accent);
+  }
+  .title {
+    color: var(--color-accent-deep);
+  }
+}
+
+.danger {
+  background: var(--color-surface);
+  border: 1px solid var(--color-danger-soft);
+
+  .icon {
+    color: var(--color-danger);
+  }
+}

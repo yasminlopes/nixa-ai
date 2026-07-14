@@ -9,7 +9,6 @@ function parseStreamChunk(accumulated: string): ChatResult {
   try {
     sources = JSON.parse(accumulated.slice(sourcesIdx + 13))
   } catch {
-    // ignore
   }
   return { content, sources }
 }
@@ -26,6 +25,7 @@ export async function* sendChatMessage(params: SendChatMessageParams): AsyncGene
       messages: params.messages,
       userName: params.userName,
       provider: params.provider,
+      apiKeys: params.apiKeys,
     }),
     signal: params.signal,
   })

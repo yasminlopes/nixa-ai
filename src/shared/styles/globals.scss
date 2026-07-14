@@ -130,8 +130,12 @@
 // global de verdade, não um .module.scss) porque o CSS Modules escoparia
 // (hash) o seletor .dark e ele deixaria de bater com a classe real aplicada
 // no <html> pelo ThemeContext.
+//
+// Seletor `:root.dark` (não só `.dark`) de propósito: especificidade (0,2,0)
+// vence qualquer `:root` (0,1,0) independentemente da ordem de carga dos
+// chunks CSS — garante que o dark mode nunca seja sobrescrito pela cascata.
 
-.dark {
+:root.dark {
   --color-bg: #0A0B0E;
   --color-bg-elevated: #16171C;
   --color-surface: #16171C;

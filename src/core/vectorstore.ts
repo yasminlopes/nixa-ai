@@ -1,10 +1,12 @@
 import { DocChunk } from '@/shared/types'
-import { getEmbeddingForProvider, type EmbeddingProvider } from '@/core/embeddings'
-import { resolveProviderApiKey, MissingApiKeyError } from '@/core/settings/provider-key-service'
+import {
+  getEmbeddingForProvider,
+  getIndexingEmbeddingProvider,
+  EMBEDDING_SCHEMA_VERSION,
+  type EmbeddingProvider,
+} from '@/core/embeddings'
 import fs from 'fs/promises'
 import path from 'path'
-
-// ─── Config ─────────────────────────────────────────────────────────────────
 
 const LOCAL_STORE_PATH = path.join(process.cwd(), 'data', 'vectorstore.json')
 
@@ -24,16 +26,18 @@ const MIN_HYBRID_RELEVANCE = 0.22
 /** Threshold quando o embedding falha e caímos no fallback puramente léxico. */
 const MIN_LEXICAL_RELEVANCE = 0.10
 
-// ─── State ───────────────────────────────────────────────────────────────────
-
 let embeddingsUnavailable = false
-const embeddingCache = new Map<string, number[]>()
-
-// ─── Local JSON Storage ──────────────────────────────────────────────────────
+const embeddingCache = new Map<string, { embedding: number[]; model: string }>()
 
 interface LocalStore {
   chunks: DocChunk[]
   updatedAt: string
+  // A busca DEVE usar o mesmo provider/modelo/dimensão da indexação, senão os
+  // vetores vivem em espaços diferentes e a similaridade vira ruído.
+  embeddingProvider?: EmbeddingProvider
+  embeddingModel?: string
+  dims?: number
+  schemaVersion?: number
 }
 
 let _localStore: LocalStore | null = null
@@ -46,6 +50,13 @@ async function getLocalStore(): Promise<LocalStore> {
     _localStore = JSON.parse(data) as LocalStore
   } catch {
     _localStore = { chunks: [], updatedAt: new Date().toISOString() }
+  }
+
+  // Backfill de índices legados (sem identidade de embedding): infere o provider
+  // do env (default histórico) e a dimensão a partir do primeiro chunk.
+  if (_localStore.chunks.length > 0 && !_localStore.embeddingProvider) {
+    _localStore.embeddingProvider = getIndexingEmbeddingProvider()
+    _localStore.dims = _localStore.chunks.find(chunk => chunk.embedding?.length)?.embedding.length
   }
 
   return _localStore
@@ -74,8 +85,6 @@ function cosineSimilarity(a: number[], b: number[]): number {
   return dotProduct / (Math.sqrt(normA) * Math.sqrt(normB))
 }
 
-// ─── Domain signals / noise filters ──────────────────────────────────────────
-
 const NICE_DOMAIN_SIGNALS = ['nice', 'cxone', 'incontact', 'nicedevone',
   'developer.niceincontact.com', 'help.nicecxone.com']
 
@@ -90,25 +99,25 @@ const THIRD_PARTY_NOISE_CONTENT_PATTERNS = [
 ]
 
 function queryAllowsThirdParty(query: string): boolean {
-  const q = query.toLowerCase()
+  const queryLower = query.toLowerCase()
   return (
-    q.includes('github') || q.includes('microsoft') || q.includes('azure') ||
-    q.includes('slack')  || q.includes('jira')       || q.includes('atlassian')
+    queryLower.includes('github') || queryLower.includes('microsoft') || queryLower.includes('azure') ||
+    queryLower.includes('slack')  || queryLower.includes('jira')       || queryLower.includes('atlassian')
   )
 }
 
 function hasNiceSignals(text: string): boolean {
   const lower = text.toLowerCase()
-  return NICE_DOMAIN_SIGNALS.some(s => lower.includes(s))
+  return NICE_DOMAIN_SIGNALS.some(signal => lower.includes(signal))
 }
 
 function isLikelyThirdPartyNoise(doc: DocChunk): boolean {
   const url = (doc.metadata.url ?? '').toLowerCase()
   const title = (doc.metadata.title ?? '').toLowerCase()
   const head = doc.content.slice(0, 900).toLowerCase()
-  const hasNoiseUrl = THIRD_PARTY_NOISE_URL_PATTERNS.some(p => url.includes(p))
-  const hasNoiseContent = THIRD_PARTY_NOISE_CONTENT_PATTERNS.some(p =>
-    head.includes(p) || title.includes(p)
+  const hasNoiseUrl = THIRD_PARTY_NOISE_URL_PATTERNS.some(pattern => url.includes(pattern))
+  const hasNoiseContent = THIRD_PARTY_NOISE_CONTENT_PATTERNS.some(pattern =>
+    head.includes(pattern) || title.includes(pattern)
   )
   const hasNiceCtx = hasNiceSignals(url) || hasNiceSignals(title) || hasNiceSignals(head)
   return (hasNoiseUrl || hasNoiseContent) && !hasNiceCtx
@@ -122,27 +131,25 @@ function filterDomainNoise(scored: ScoredDoc[], query: string): ScoredDoc[] {
   return filtered.length > 0 ? filtered : scored
 }
 
-// ─── Scoring helpers ──────────────────────────────────────────────────────────
-
 function lexicalSimilarity(query: string, content: string): number {
-  const tokenize = (v: string) =>
-    v.toLowerCase().replace(/[^a-z0-9\s]/g, ' ').split(/\s+/).filter(t => t.length > 2)
+  const tokenize = (value: string) =>
+    value.toLowerCase().replace(/[^a-z0-9\s]/g, ' ').split(/\s+/).filter(token => token.length > 2)
   const queryTokens = tokenize(query)
   if (queryTokens.length === 0) return 0
   const contentTokens = new Set(tokenize(content))
   let matches = 0
-  for (const t of queryTokens) if (contentTokens.has(t)) matches++
+  for (const token of queryTokens) if (contentTokens.has(token)) matches++
   return matches / queryTokens.length
 }
 
 function tokenizeQuery(query: string): string[] {
-  return query.toLowerCase().replace(/[^a-z0-9\s@._/-]/g, ' ').split(/\s+/).filter(t => t.length > 2)
+  return query.toLowerCase().replace(/[^a-z0-9\s@._/-]/g, ' ').split(/\s+/).filter(token => token.length > 2)
 }
 
 function looksTechnicalQuery(query: string): boolean {
-  const q = query.toLowerCase()
+  const queryLower = query.toLowerCase()
   return ['api', 'sdk', 'auth', 'token', 'webhook', 'endpoint', 'código', 'codigo', 'code']
-    .some(k => q.includes(k))
+    .some(keyword => queryLower.includes(keyword))
 }
 
 function isLowQualityChunk(doc: DocChunk): boolean {
@@ -151,8 +158,6 @@ function isLowQualityChunk(doc: DocChunk): boolean {
   if (lowerUrl.includes('/signup') || lowerUrl.includes('/login') || lowerUrl.includes('/join'))
     return true
 
-  // Chunks muito curtos só são descartados se NÃO tiverem breadcrumb (sem contexto = inútil)
-  // e não tiverem estrutura técnica. Com breadcrumb, mesmo chunks curtos preservam contexto.
   const hasBreadcrumb = !!(doc.metadata.breadcrumb && doc.metadata.breadcrumb.length > 0)
   if (doc.content.length < 60 && !hasBreadcrumb) return true
 
@@ -166,15 +171,15 @@ function isLowQualityChunk(doc: DocChunk): boolean {
 }
 
 function pageTypeBoost(pageType: DocChunk['metadata']['pageType'], technical: boolean): number {
-  const t = pageType ?? 'other'
+  const type = pageType ?? 'other'
   if (technical) {
-    if (t === 'api') return 0.12
-    if (t === 'reference') return 0.1
-    if (t === 'guide') return 0.04
+    if (type === 'api') return 0.12
+    if (type === 'reference') return 0.1
+    if (type === 'guide') return 0.04
     return 0
   }
-  if (t === 'guide') return 0.05
-  if (t === 'release') return 0.04
+  if (type === 'guide') return 0.05
+  if (type === 'release') return 0.04
   return 0
 }
 
@@ -199,14 +204,14 @@ function recencyBoost(crawledAt?: string): number {
   return 0
 }
 
-function rerankDocs(scored: ScoredDoc[], query: string, k: number): DocChunk[] {
+function rerankDocs(scored: ScoredDoc[], query: string): ScoredDoc[] {
   const tokens = tokenizeQuery(query)
   const technical = looksTechnicalQuery(query)
   const productTerms = ['copilot', 'skill', 'agent', 'skillset', 'cxone']
   const isProductTerm = productTerms.some(term => query.toLowerCase().includes(term))
   const queryLower = query.toLowerCase()
   const blacklisted = ['/signup', '/login', '/join', 'github.com/signup', 'github.com/join']
-  const urlLower = blacklisted.map(p => p.toLowerCase())
+  const urlLower = blacklisted.map(pattern => pattern.toLowerCase())
 
   const reranked = scored
     .filter(({ doc }) => !isLowQualityChunk(doc))
@@ -214,77 +219,72 @@ function rerankDocs(scored: ScoredDoc[], query: string, k: number): DocChunk[] {
       const title = (doc.metadata.title ?? '').toLowerCase()
       const head  = doc.content.slice(0, 700).toLowerCase()
       const urlLc = doc.metadata.url.toLowerCase()
-      let s = score
-      s += pageTypeBoost(doc.metadata.pageType, technical)
-      s += sourceAuthorityBoost(urlLc)
-      s += recencyBoost(doc.metadata.crawledAt)
+      let adjustedScore = score
+      adjustedScore += pageTypeBoost(doc.metadata.pageType, technical)
+      adjustedScore += sourceAuthorityBoost(urlLc)
+      adjustedScore += recencyBoost(doc.metadata.crawledAt)
 
       let titleMatches = 0, headMatches = 0
-      for (const t of tokens) {
-        if (title.includes(t)) titleMatches++
-        if (head.includes(t)) headMatches++
+      for (const token of tokens) {
+        if (title.includes(token)) titleMatches++
+        if (head.includes(token)) headMatches++
       }
-      s += titleMatches * 0.025 + headMatches * 0.01
+      adjustedScore += titleMatches * 0.025 + headMatches * 0.01
 
-      if (urlLower.some(p => urlLc.includes(p))) s -= 0.5
+      if (urlLower.some(pattern => urlLc.includes(pattern))) adjustedScore -= 0.5
 
       const breadcrumb = (doc.metadata.breadcrumb ?? '').toLowerCase()
-      if (breadcrumb && tokens.some(t => breadcrumb.includes(t))) s += 0.08
+      if (breadcrumb && tokens.some(token => breadcrumb.includes(token))) adjustedScore += 0.08
 
       if (isProductTerm) {
         const hasNiceCtx = head.includes('nice') || head.includes('cxone') ||
           title.includes('nice') || title.includes('cxone') || urlLc.includes('nice')
-        s += hasNiceCtx ? 0.1 : -0.2
+        adjustedScore += hasNiceCtx ? 0.1 : -0.2
       }
 
-      if (title.includes(queryLower)) s += 0.15
+      if (title.includes(queryLower)) adjustedScore += 0.15
 
-      return { doc, score: s }
+      return { doc, score: adjustedScore }
     })
     .sort((a, b) => b.score - a.score)
 
-  const unique = new Map<string, DocChunk>()
+  // NÃO corta em k aqui: o threshold e o top-k são aplicados DEPOIS do rerank (quem chama decide).
+  const unique = new Map<string, ScoredDoc>()
   for (const item of reranked) {
-    const fp = `${item.doc.metadata.url}::${item.doc.content.slice(0, 120)}`
-    if (!unique.has(fp)) unique.set(fp, item.doc)
-    if (unique.size >= k) break
+    const fingerprint = `${item.doc.metadata.url}::${item.doc.content.slice(0, 120)}`
+    if (!unique.has(fingerprint)) unique.set(fingerprint, item)
   }
   return Array.from(unique.values())
 }
 
-// ─── Embedding helpers ────────────────────────────────────────────────────────
-
 export async function getEmbedding(
   text: string,
   provider: EmbeddingProvider = 'gemini',
+  apiKey = '',
   onWarning?: (msg: string) => void
-): Promise<number[]> {
+): Promise<{ embedding: number[]; model: string }> {
   if (embeddingsUnavailable) throw new Error('EMBEDDINGS_UNAVAILABLE')
-  const safe = text.slice(0, MAX_EMBED_INPUT_CHARS)
+  const truncatedText = text.slice(0, MAX_EMBED_INPUT_CHARS)
 
-  const cached = embeddingCache.get(safe)
+  const cacheKey = `${provider}::${truncatedText}`
+  const cached = embeddingCache.get(cacheKey)
   if (cached) return cached
 
   try {
-    let apiKey: string
-    try {
-      apiKey = await resolveProviderApiKey(provider)
-    } catch (err) {
-      if (err instanceof MissingApiKeyError) {
-        throw new Error(`Chave de API não encontrada para ${provider}.`)
-      }
-      throw err
+    if (provider !== 'ollama' && !apiKey) {
+      throw new Error(`Chave de API não encontrada para ${provider}.`)
     }
 
-    const result = await getEmbeddingForProvider(provider, safe, apiKey, onWarning)
+    const result = await getEmbeddingForProvider(provider, truncatedText, apiKey, onWarning)
+    const entry = { embedding: result.embedding, model: result.model }
 
-    embeddingCache.set(safe, result.embedding)
+    embeddingCache.set(cacheKey, entry)
     if (embeddingCache.size > EMBED_CACHE_LIMIT) {
       const firstKey = embeddingCache.keys().next().value as string
       if (firstKey) embeddingCache.delete(firstKey)
     }
 
-    return result.embedding
+    return entry
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err)
     console.error(`[EMBED] Failed: ${msg}`)
@@ -303,31 +303,34 @@ export async function getEmbedding(
   }
 }
 
-// ─── Public API ───────────────────────────────────────────────────────────────
-
 async function embedChunksWithConcurrencyControl(
   chunks: Omit<DocChunk, 'id' | 'embedding'>[],
   provider: EmbeddingProvider = 'gemini',
+  apiKey = '',
   onWarning?: (msg: string) => void
-): Promise<{ embedding: number[]; chunk: Omit<DocChunk, 'id' | 'embedding'> }[]> {
+): Promise<{ embedding: number[]; model: string; chunk: Omit<DocChunk, 'id' | 'embedding'> }[]> {
   // Rate limits: Gemini/OpenAI pedem serialização com pausa; Ollama é local e aguenta paralelo
   const concurrencyLimit = provider === 'ollama' ? 4 : 1
   const delayMs = provider === 'gemini' ? 700 : provider === 'openai' ? 500 : 0
-  const results: { embedding: number[]; chunk: Omit<DocChunk, 'id' | 'embedding'> }[] = []
+  const results: { embedding: number[]; model: string; chunk: Omit<DocChunk, 'id' | 'embedding'> }[] = []
   const queue = [...chunks]
 
   const processChunk = async (chunk: Omit<DocChunk, 'id' | 'embedding'>) => {
+    // O TÍTULO entra no embedding (é semântico). O breadcrumb NÃO — ele é metadata.
     const titlePrefix = chunk.metadata.title ? `[${chunk.metadata.title}] ` : ''
     const enhancedContent = titlePrefix + chunk.content
 
     let embedding: number[] = []
+    let model = ''
     try {
-      embedding = await getEmbedding(enhancedContent, provider, onWarning)
+      const embeddingResult = await getEmbedding(enhancedContent, provider, apiKey, onWarning)
+      embedding = embeddingResult.embedding
+      model = embeddingResult.model
     } catch (err) {
       if (String((err as { message?: string })?.message ?? '') !== 'EMBEDDINGS_UNAVAILABLE') throw err
       embeddingsUnavailable = true
     }
-    return { embedding, chunk }
+    return { embedding, model, chunk }
   }
 
   const worker = async () => {
@@ -338,7 +341,7 @@ async function embedChunksWithConcurrencyControl(
       results.push(await processChunk(chunk))
 
       if (queue.length > 0 && delayMs > 0) {
-        await new Promise(r => setTimeout(r, delayMs))
+        await new Promise(resolve => setTimeout(resolve, delayMs))
       }
     }
   }
@@ -354,19 +357,29 @@ async function embedChunksWithConcurrencyControl(
 export async function addDocChunks(
   chunks: Omit<DocChunk, 'id' | 'embedding'>[],
   provider: EmbeddingProvider = 'gemini',
+  apiKey = '',
   onWarning?: (msg: string) => void
 ): Promise<void> {
   const sourceUrl = chunks[0]?.metadata?.url
-  const isSingleSource = !!sourceUrl && chunks.every(c => c.metadata?.url === sourceUrl)
+  const isSingleSource = !!sourceUrl && chunks.every(chunk => chunk.metadata?.url === sourceUrl)
 
-  const embeddedChunks = await embedChunksWithConcurrencyControl(chunks, provider, onWarning)
+  const embeddedChunks = await embedChunksWithConcurrencyControl(chunks, provider, apiKey, onWarning)
   if (embeddedChunks.length === 0) return
 
   const store = await getLocalStore()
 
-  // Re-indexação da mesma URL substitui os chunks antigos
+  // A busca usará EXATAMENTE este provider/modelo/dimensão, gravado a partir do
+  // primeiro chunk realmente embutido.
+  const firstEmbedded = embeddedChunks.find(embedded => embedded.embedding.length > 0)
+  if (firstEmbedded) {
+    store.embeddingProvider = provider
+    store.embeddingModel = firstEmbedded.model || store.embeddingModel
+    store.dims = firstEmbedded.embedding.length
+    store.schemaVersion = EMBEDDING_SCHEMA_VERSION
+  }
+
   if (isSingleSource) {
-    store.chunks = store.chunks.filter(c => c.metadata.url !== sourceUrl)
+    store.chunks = store.chunks.filter(chunk => chunk.metadata.url !== sourceUrl)
   }
 
   for (const { embedding, chunk } of embeddedChunks) {
@@ -382,50 +395,91 @@ export async function addDocChunks(
   await saveLocalStore(store)
 }
 
-export async function searchSimilarDocs(query: string, k = 5, provider: EmbeddingProvider = 'gemini'): Promise<DocChunk[]> {
-  const store = await getLocalStore()
-  if (store.chunks.length === 0) return []
+export interface SearchResult {
+  documents: DocChunk[]
+  scored: Array<{ doc: DocChunk; score: number }>
+  usedLexicalFallback: boolean
+  embeddingModel?: string
+}
 
-  const queryWords = query.trim().split(/\s+/).filter(Boolean).length
+/**
+ * Busca híbrida.
+ * - `semanticQuery`: pergunta ORIGINAL limpa → vira o embedding (sem poluição).
+ * - `lexicalQuery`: pergunta + termos expandidos → alimenta só o canal léxico.
+ *
+ * Ordem: pool (top N por score bruto, SEM threshold) → rerank do pool inteiro →
+ * threshold PÓS-rerank → top-k. Assim os boosts do rerank podem resgatar bons
+ * documentos que o threshold cru descartaria.
+ *
+ * O embedding da query usa SEMPRE o provider/modelo gravado no índice — nunca o
+ * LLM de chat. Se a dimensão não bater, cai no léxico (sem fingir similaridade).
+ */
+export async function searchSimilarDocs(params: {
+  semanticQuery: string
+  lexicalQuery: string
+  k?: number
+  apiKey?: string
+}): Promise<SearchResult> {
+  const { semanticQuery, lexicalQuery } = params
+  const k = params.k ?? 5
+  const store = await getLocalStore()
+  if (store.chunks.length === 0) {
+    return { documents: [], scored: [], usedLexicalFallback: false }
+  }
+
+  const queryWords = semanticQuery.trim().split(/\s+/).filter(Boolean).length
   const isShortQuery = queryWords <= 2
   const semanticWeight = isShortQuery ? 0.5 : 0.75
   const lexicalWeight  = isShortQuery ? 0.5 : 0.25
   const candidatePoolSize = Math.max(k * 4, 16)
+  const embeddingProvider = store.embeddingProvider ?? getIndexingEmbeddingProvider()
+
+  const finalize = (basePool: ScoredDoc[], threshold: number, usedLexicalFallback: boolean): SearchResult => {
+    const pool = filterDomainNoise(basePool, semanticQuery)
+    const reranked = rerankDocs(pool, semanticQuery)
+    const relevant = reranked.filter(scoredDoc => scoredDoc.score >= threshold).slice(0, k)
+    return {
+      documents: relevant.map(scoredDoc => scoredDoc.doc),
+      scored: relevant,
+      usedLexicalFallback,
+      embeddingModel: store.embeddingModel,
+    }
+  }
 
   try {
-    const queryEmbedding = await getEmbedding(query, provider)
+    const { embedding: queryEmbedding } = await getEmbedding(semanticQuery, embeddingProvider, params.apiKey ?? '')
 
-    const scored = filterDomainNoise(
-      store.chunks.map(chunk => ({
+    // Se a dimensão da query não bate com a do índice, o cosine seria ruído.
+    if (store.dims && queryEmbedding.length !== store.dims) {
+      console.warn(`[VECTORSTORE] dim mismatch (query=${queryEmbedding.length}, índice=${store.dims}) — reindexe. Fallback léxico.`)
+      throw new Error('EMBEDDING_DIM_MISMATCH')
+    }
+
+    const basePool = store.chunks
+      .map(chunk => ({
         doc: chunk,
         score:
           cosineSimilarity(queryEmbedding, chunk.embedding) * semanticWeight +
-          lexicalSimilarity(query, chunk.content) * lexicalWeight,
-      })).sort((a, b) => b.score - a.score).slice(0, candidatePoolSize),
-      query
-    )
+          lexicalSimilarity(lexicalQuery, chunk.content) * lexicalWeight,
+      }))
+      .sort((a, b) => b.score - a.score)
+      .slice(0, candidatePoolSize)
 
-    const relevant = scored.filter(s => s.score >= MIN_HYBRID_RELEVANCE)
-    if (relevant.length === 0) return []
-    return rerankDocs(relevant, query, k)
+    return finalize(basePool, MIN_HYBRID_RELEVANCE, false)
   } catch (err) {
-    console.error('[VECTORSTORE] Erro na busca semântica, fallback léxico:', err)
-    const scored = filterDomainNoise(
-      store.chunks.map(chunk => ({
-        doc: chunk,
-        score: lexicalSimilarity(query, chunk.content),
-      })).sort((a, b) => b.score - a.score).slice(0, candidatePoolSize),
-      query
-    )
-    const relevant = scored.filter(s => s.score >= MIN_LEXICAL_RELEVANCE)
-    if (relevant.length === 0) return []
-    return rerankDocs(relevant, query, k)
+    console.error('[VECTORSTORE] busca semântica falhou, fallback léxico:', err instanceof Error ? err.message : err)
+    const basePool = store.chunks
+      .map(chunk => ({ doc: chunk, score: lexicalSimilarity(lexicalQuery, chunk.content) }))
+      .sort((a, b) => b.score - a.score)
+      .slice(0, candidatePoolSize)
+
+    return finalize(basePool, MIN_LEXICAL_RELEVANCE, true)
   }
 }
 
 export async function getStoreStats(): Promise<{ count: number; sources: string[] }> {
   const store = await getLocalStore()
-  const sources = Array.from(new Set(store.chunks.map(c => c.metadata.source).filter(Boolean)))
+  const sources = Array.from(new Set(store.chunks.map(chunk => chunk.metadata.source).filter(Boolean)))
   return { count: store.chunks.length, sources }
 }
 
@@ -440,6 +494,13 @@ export async function getIndexedUrlsWithDates(): Promise<Map<string, string>> {
     }
   }
   return result
+}
+
+/** Hash de conteúdo já indexado para uma URL (page-level). Permite pular re-embed
+ *  quando o conteúdo não mudou, mesmo que a página tenha sido re-crawleada. */
+export async function getIndexedContentHash(url: string): Promise<string | undefined> {
+  const store = await getLocalStore()
+  return store.chunks.find(chunk => chunk.metadata.url === url)?.metadata.contentHash
 }
 
 export function isUrlStale(crawledAt: string | undefined, maxAgeDays = 14): boolean {

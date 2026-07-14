@@ -1,43 +1,53 @@
 import type { Metadata } from 'next'
 import { Inter, Bricolage_Grotesque, JetBrains_Mono } from 'next/font/google'
 import './globals.scss'
-import { ThemeProvider } from '@/shared/contexts/theme-context'
+import { AppProviders } from '@/shared/providers/app-provider'
+import { themeScript } from '@/shared/theme/theme-script'
 import styles from './layout.module.scss'
 
 const inter = Inter({
   subsets: ['latin'],
-  display: 'swap',
   variable: '--font-sans',
+  display: 'swap',
 })
 
 const display = Bricolage_Grotesque({
   subsets: ['latin'],
-  display: 'swap',
   variable: '--font-display',
   weight: ['400', '500', '600', '700'],
+  display: 'swap',
 })
 
 const mono = JetBrains_Mono({
   subsets: ['latin'],
-  display: 'swap',
   variable: '--font-mono',
+  display: 'swap',
 })
 
 export const metadata: Metadata = {
-  title: 'Nixa',
+  title: {
+    default: 'Nixa',
+    template: '%s | Nixa',
+  },
   description: 'Assistente especialista em NICE e CXone',
 }
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default function RootLayout({
+  children,
+}: Readonly<{
+  children: React.ReactNode
+}>) {
   return (
-    <html lang="pt-BR" suppressHydrationWarning>
-      <body
-        className={`${inter.variable} ${display.variable} ${mono.variable} ${styles.body}`}
-        style={{ background: 'var(--color-bg)', color: 'var(--color-text)' }}
-      >
-        <ThemeProvider>
-          {children}
-        </ThemeProvider>
+    <html
+      lang="pt-BR"
+      suppressHydrationWarning
+      className={`${inter.variable} ${display.variable} ${mono.variable}`}
+    >
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: themeScript }} />
+      </head>
+      <body className={styles.body}>
+        <AppProviders>{children}</AppProviders>
       </body>
     </html>
   )

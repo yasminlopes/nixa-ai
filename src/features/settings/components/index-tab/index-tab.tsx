@@ -1,76 +1,154 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { AlertTriangle, Database } from 'lucide-react'
+import { AlertTriangle, Database, CheckCircle2, XCircle } from 'lucide-react'
+import { Callout } from '@/shared/ui/callout'
+import { getApiKeyMap } from '@/shared/utils/api-key-storage'
 import { SectionHeader } from '../section-header'
 import styles from './index-tab.module.scss'
 
-export function IndexTab({ onRunningChange }: { onRunningChange: (running: boolean) => void }) {
+type Status = 'idle' | 'indexing' | 'success' | 'error'
+
+// Sem progresso do servidor por este tempo → aborta e cai em erro (evita loader
+// infinito quando o stream trava sem fechar a conexão). Cada chunk recebido
+// reinicia o cronômetro, então backoffs de rate limit (que emitem avisos) não
+// disparam o timeout.
+const IDLE_TIMEOUT_MS = 120_000
+
+const AUTO_CLOSE_SECONDS = 6
+
+interface IndexTabProps {
+  onRunningChange: (running: boolean) => void
+  onClose: () => void
+}
+
+export function IndexTab({ onRunningChange, onClose }: IndexTabProps) {
+  const [status, setStatus] = useState<Status>('idle')
   const [logs, setLogs] = useState<string[]>([])
-  const [running, setRunning] = useState(false)
-  const [done, setDone] = useState(false)
   const [chunkCount, setChunkCount] = useState(0)
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [forceReindex, setForceReindex] = useState(false)
-  const [reloadCountdown, setReloadCountdown] = useState<number | null>(null)
-  const [hasWarnings, setHasWarnings] = useState(false)
+  const [autoCloseIn, setAutoCloseIn] = useState<number | null>(null)
   const logsRef = useRef<HTMLDivElement>(null)
+
+  const running = status === 'indexing'
+  const hasWarnings =
+    running &&
+    logs.some(log => log.includes('⚠️') || log.includes('rate limit') || log.includes('indisponível'))
 
   useEffect(() => { onRunningChange(running) }, [running, onRunningChange])
 
   useEffect(() => {
     if (!running) return
-    const handleBeforeUnload = (e: BeforeUnloadEvent) => { e.preventDefault(); e.returnValue = '' }
+    const handleBeforeUnload = (event: BeforeUnloadEvent) => { event.preventDefault(); event.returnValue = '' }
     window.addEventListener('beforeunload', handleBeforeUnload)
     return () => window.removeEventListener('beforeunload', handleBeforeUnload)
   }, [running])
 
   useEffect(() => {
-    if (!done) return
-    setReloadCountdown(5)
+    if (status !== 'success') { setAutoCloseIn(null); return }
+    setAutoCloseIn(AUTO_CLOSE_SECONDS)
     const interval = setInterval(() => {
-      setReloadCountdown(prev => {
-        if (prev === null || prev <= 1) { clearInterval(interval); window.location.reload(); return null }
+      setAutoCloseIn(prev => {
+        if (prev === null || prev <= 1) { clearInterval(interval); onClose(); return null }
         return prev - 1
       })
     }, 1000)
     return () => clearInterval(interval)
-  }, [done])
+  }, [status, onClose])
 
   async function startIndexing() {
-    setRunning(true); setLogs([]); setDone(false); setChunkCount(0); setHasWarnings(false)
+    setStatus('indexing')
+    setLogs([])
+    setChunkCount(0)
+    setErrorMessage(null)
+
+    const controller = new AbortController()
+    let idleTimer: ReturnType<typeof setTimeout> | undefined
+    const resetIdleTimer = () => {
+      if (idleTimer) clearTimeout(idleTimer)
+      idleTimer = setTimeout(
+        () => controller.abort(new DOMException('Idle timeout', 'TimeoutError')),
+        IDLE_TIMEOUT_MS
+      )
+    }
+
+    let sawComplete = false
+    let sawFatal = false
+
     try {
+      resetIdleTimer()
+
       const res = await fetch('/api/index-docs', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ maxPages: 60, maxDepth: 2, staleDays: 14, force: forceReindex }),
+        body: JSON.stringify({ maxPages: 60, maxDepth: 2, staleDays: 14, force: forceReindex, apiKeys: getApiKeyMap() }),
+        signal: controller.signal,
       })
-      const reader = res.body!.getReader()
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => null)
+        throw new Error(data?.message ?? `A API respondeu com erro (HTTP ${res.status}).`)
+      }
+      if (!res.body) throw new Error('Resposta inválida do servidor (corpo vazio).')
+
+      const reader = res.body.getReader()
       const decoder = new TextDecoder()
+      let buffer = ''
+
       while (true) {
         const { done: streamDone, value } = await reader.read()
         if (streamDone) break
-        const lines = decoder.decode(value).split('\n').filter(l => l.startsWith('data:'))
+        resetIdleTimer()
+
+        buffer += decoder.decode(value, { stream: true })
+        const lines = buffer.split('\n')
+        buffer = lines.pop() ?? '' // guarda a última linha (possivelmente parcial)
+
         for (const line of lines) {
+          if (!line.startsWith('data:')) continue
           try {
-            const { msg } = JSON.parse(line.slice(5))
+            const parsed = JSON.parse(line.slice(5))
+            const msg = parsed?.msg
+            if (typeof msg !== 'string') continue
+
             setLogs(prev => [...prev, msg])
-            if (msg.includes('⚠️') || msg.includes('rate limit') || msg.includes('indisponível')) setHasWarnings(true)
-            const m = msg.match(/(\d+)\s+chunks\s+adicionados/i)
-            if (m) setChunkCount(parseInt(m[1]))
+            if (msg.startsWith('✅')) sawComplete = true
+            if (msg.startsWith('❌')) sawFatal = true
+
             setTimeout(() => logsRef.current?.scrollTo({ top: 99999, behavior: 'smooth' }), 50)
-          } catch { /* ignore */ }
+          } catch {
+          }
         }
       }
-    } catch (err) {
-      setLogs(prev => [...prev, `Erro: ${err instanceof Error ? err.message : String(err)}`])
-    } finally {
-      setRunning(false); setDone(true)
-      if (chunkCount === 0) {
-        try {
-          const s = await fetch('/api/index-docs').then(r => r.json())
-          if (s.count) setChunkCount(s.count)
-        } catch { /* ignore */ }
+
+      if (sawFatal) {
+        throw new Error('A indexação falhou no servidor. Confira os logs abaixo e tente novamente.')
       }
+      if (!sawComplete) {
+        throw new Error('A conexão foi encerrada antes de concluir. Tente novamente.')
+      }
+
+      try {
+        const stats = await fetch('/api/index-docs').then(response => (response.ok ? response.json() : null))
+        if (stats?.count) setChunkCount(stats.count)
+      } catch {
+      }
+
+      setStatus('success')
+    } catch (error) {
+      const isAbort =
+        error instanceof DOMException && (error.name === 'AbortError' || error.name === 'TimeoutError')
+      setErrorMessage(
+        isAbort
+          ? 'Tempo limite excedido — a indexação ficou sem responder. Tente novamente.'
+          : error instanceof Error ? error.message : 'Erro inesperado durante a indexação.'
+      )
+      setStatus('error')
+    } finally {
+      // Garante que nenhum timer fique pendurado. NUNCA define sucesso aqui —
+      // o estado final já foi decidido no try (success) ou no catch (error).
+      if (idleTimer) clearTimeout(idleTimer)
     }
   }
 
@@ -82,6 +160,9 @@ export function IndexTab({ onRunningChange }: { onRunningChange: (running: boole
     return styles.logDefault
   }
 
+  const submitLabel =
+    status === 'indexing' ? 'Indexando…' : status === 'error' ? 'Tentar novamente' : 'Iniciar indexação'
+
   return (
     <div>
       <SectionHeader
@@ -90,7 +171,7 @@ export function IndexTab({ onRunningChange }: { onRunningChange: (running: boole
         subtitle="Atualize a base de contexto da Nixa com as docs NICE/CXone."
       />
 
-      {logs.length === 0 && !running ? (
+      {status === 'idle' && logs.length === 0 ? (
         <div className={styles.card}>
           <p className={styles.cardText}>Vai crawlear e indexar as docs públicas:</p>
           <ul className={styles.seedList}>
@@ -98,12 +179,9 @@ export function IndexTab({ onRunningChange }: { onRunningChange: (running: boole
             <li>· developer.niceincontact.com</li>
           </ul>
 
-          <div className={styles.noticeBox}>
-            <AlertTriangle className={styles.noticeIcon} />
-            <p className={styles.noticeText}>
-              Pode levar alguns minutos e consumir requests do provedor de embeddings. URLs já indexadas recentemente são puladas automaticamente.
-            </p>
-          </div>
+          <Callout icon={AlertTriangle} tone="neutral">
+            Pode levar alguns minutos e consumir requests do provedor de embeddings. URLs já indexadas recentemente são puladas automaticamente.
+          </Callout>
 
           <label className={styles.forceRow}>
             <button
@@ -126,7 +204,7 @@ export function IndexTab({ onRunningChange }: { onRunningChange: (running: boole
         </div>
       ) : (
         <>
-          <div ref={logsRef} className={styles.terminal}>
+          <div ref={logsRef} className={styles.terminal} aria-live="polite">
             {logs.map((log, i) => (
               <p key={i} className={logClass(log)}>{log}</p>
             ))}
@@ -135,60 +213,78 @@ export function IndexTab({ onRunningChange }: { onRunningChange: (running: boole
             )}
           </div>
 
-          {hasWarnings && running && (
-            <div className={styles.rateLimitBox}>
-              <AlertTriangle className={styles.noticeIcon} />
-              <div>
-                <p className={styles.rateLimitTitle}>Taxa de requisição atingida</p>
-                <p className={styles.rateLimitText}>
-                  O provedor de embeddings está limitando requisições. Retry automático em andamento.
-                </p>
-              </div>
-            </div>
+          {hasWarnings && (
+            <Callout icon={AlertTriangle} tone="accent" title="Taxa de requisição atingida" className={styles.spacedTop}>
+              O provedor de embeddings está limitando requisições. Retry automático em andamento.
+            </Callout>
           )}
         </>
       )}
 
       {running && (
-        <div className={styles.runningNotice}>
-          <AlertTriangle className={styles.runningNoticeIcon} />
-          <p className={styles.runningNoticeText}>
-            Não feche nem troque de aba — a indexação será interrompida.
-          </p>
-        </div>
+        <Callout icon={AlertTriangle} tone="accent" className={styles.spacedTop}>
+          Não feche nem troque de aba — a indexação será interrompida.
+        </Callout>
       )}
 
-      {done && (
-        <div className={styles.doneCard}>
-          <p className={styles.doneEyebrow}>Concluído</p>
-          <h3 className={styles.doneTitle}>Tudo pronto.</h3>
-          <p className={styles.doneText}>Base de conhecimento atualizada com sucesso.</p>
+      {status === 'success' && (
+        <div className={styles.doneCard} role="status">
+          <div className={styles.stateEyebrowRow}>
+            <CheckCircle2 className={styles.doneStateIcon} />
+            <p className={styles.doneEyebrow}>Concluído</p>
+          </div>
+          <h3 className={styles.doneTitle}>Documentação indexada.</h3>
+          <p className={styles.doneText}>A base de conhecimento foi atualizada com sucesso.</p>
           {chunkCount > 0 && (
             <div className={styles.chunkBadge}>
               <Database className={styles.chunkBadgeIcon} />
               <span className={styles.chunkBadgeText}>
-                {chunkCount.toLocaleString('pt-BR')} chunks
+                {chunkCount.toLocaleString('pt-BR')} chunks na base
               </span>
             </div>
           )}
           <div className={styles.doneActions}>
-            <button onClick={() => window.location.reload()} className={styles.reloadButton}>
-              Recarregar agora
+            <button onClick={onClose} className={styles.reloadButton}>
+              Fechar agora
             </button>
-            {reloadCountdown !== null && (
+            {autoCloseIn !== null && (
               <span className={styles.reloadCountdown}>
-                recarregando em {reloadCountdown}s…
+                fechando em {autoCloseIn}s…
               </span>
             )}
           </div>
         </div>
       )}
 
-      <div className={styles.submitRow}>
-        <button onClick={startIndexing} disabled={running} className={styles.submitButton}>
-          {running ? 'Indexando…' : 'Iniciar indexação'}
-        </button>
-      </div>
+      {status === 'error' && (
+        <div className={styles.errorCard} role="alert">
+          <div className={styles.stateEyebrowRow}>
+            <XCircle className={styles.errorStateIcon} />
+            <p className={styles.errorEyebrow}>Falhou</p>
+          </div>
+          <h3 className={styles.errorTitle}>A indexação não foi concluída.</h3>
+          <p className={styles.errorText}>Nada foi corrompido — você pode tentar novamente.</p>
+          {errorMessage && (
+            <p className={styles.errorReason}>{errorMessage}</p>
+          )}
+          <div className={styles.doneActions}>
+            <button onClick={startIndexing} className={styles.retryButton}>
+              Tentar novamente
+            </button>
+            <button onClick={onClose} className={styles.secondaryButton}>
+              Fechar
+            </button>
+          </div>
+        </div>
+      )}
+
+      {status !== 'success' && (
+        <div className={styles.submitRow}>
+          <button onClick={startIndexing} disabled={running} className={styles.submitButton}>
+            {submitLabel}
+          </button>
+        </div>
+      )}
     </div>
   )
 }

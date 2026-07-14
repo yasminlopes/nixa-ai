@@ -3,14 +3,35 @@ import { crawlPage, discoverLinks, chunkText, SEED_URLS } from '@/core/crawler'
 import {
   addDocChunks,
   clearStore,
+  getIndexedContentHash,
   getIndexedUrlsWithDates,
   getStoreStats,
   isUrlStale,
 } from '@/core/vectorstore'
-import { type EmbeddingProvider } from '@/core/embeddings'
+import { getIndexingEmbeddingProvider, type EmbeddingProvider } from '@/core/embeddings'
+import { getKeyForProvider, MissingApiKeyError, type ApiKeyMap } from '@/core/settings/provider-key-service'
 
 export const runtime = 'nodejs'
 export const maxDuration = 300
+
+function isAuthLikeError(detail: string): boolean {
+  const lower = detail.toLowerCase()
+  return (
+    lower.includes('api key not valid') ||
+    lower.includes('api_key_invalid') ||
+    lower.includes('invalid api key') ||
+    lower.includes('permission_denied') ||
+    lower.includes('unauthenticated') ||
+    lower.includes('chave de api') ||
+    lower.includes('401') ||
+    lower.includes('403')
+  )
+}
+
+function truncateDetail(detail: string, max = 180): string {
+  const flat = detail.replace(/\s+/g, ' ').trim()
+  return flat.length > max ? `${flat.slice(0, max)}…` : flat
+}
 
 export async function GET() {
   const stats = await getStoreStats()
@@ -23,7 +44,21 @@ export async function POST(req: NextRequest) {
   const maxDepth: number  = body.maxDepth  ?? 1
   const staleDays: number = body.staleDays ?? 30
   const force: boolean    = body.force     ?? false
-  const provider: EmbeddingProvider = body.embeddingProvider ?? 'gemini'
+  const provider: EmbeddingProvider = body.embeddingProvider ?? getIndexingEmbeddingProvider()
+  const apiKeys: ApiKeyMap | undefined = body.apiKeys
+
+  let embeddingApiKey = ''
+  try {
+    embeddingApiKey = getKeyForProvider(provider, apiKeys)
+  } catch (error) {
+    if (error instanceof MissingApiKeyError) {
+      return Response.json(
+        { message: `Configure uma chave de ${provider} em Modelos de IA antes de indexar.` },
+        { status: 400 }
+      )
+    }
+    throw error
+  }
 
   const encoder = new TextEncoder()
 
@@ -60,7 +95,6 @@ export async function POST(req: NextRequest) {
         send(`   Usando embedding provider: ${provider}`)
 
         while (queue.length > 0 && visited.size < maxPages) {
-          // Prioriza por score e processa em micro-batches sequenciais
           queue.sort((a, b) => b.priority - a.priority)
           const item = queue.shift()!
           queued.delete(item.url)
@@ -69,7 +103,6 @@ export async function POST(req: NextRequest) {
           if (visited.has(url)) continue
           visited.add(url)
 
-          // ── Verificar staleness ──────────────────────────────────────────
           const crawledAt = indexedDates.get(url)
           const stale = isUrlStale(crawledAt, staleDays)
 
@@ -78,7 +111,6 @@ export async function POST(req: NextRequest) {
             const ageDays = Math.floor((Date.now() - Date.parse(crawledAt)) / 86_400_000)
             send(`↷ (${visited.size}/${maxPages}) já indexado (${ageDays}d): ${url}`)
 
-            // Mesmo pulando, descobrimos links para alcançar sub-páginas novas
             if (depth < maxDepth && visited.size < maxPages) {
               const links = await discoverLinks(url, 15)
               for (const link of links) {
@@ -91,7 +123,6 @@ export async function POST(req: NextRequest) {
             continue
           }
 
-          // ── Crawl ────────────────────────────────────────────────────────
           const label = stale && crawledAt ? '(refresh) ' : ''
           send(`⟳  (${visited.size}/${maxPages}) ${label}${url}`)
 
@@ -102,32 +133,50 @@ export async function POST(req: NextRequest) {
             continue
           }
 
-          const chunks = chunkText(page.content, page.breadcrumb).map(content => ({
+          if (!force) {
+            const previousHash = await getIndexedContentHash(url)
+            if (previousHash && previousHash === page.contentHash) {
+              skipped++
+              send(`   ↷ conteúdo inalterado (hash), pulando embedding`)
+              continue
+            }
+          }
+
+          const indexedAtIso = new Date().toISOString()
+          const chunks = chunkText(page.content).map(content => ({
             content,
             metadata: {
-              source:     page.title,
-              title:      page.title,
-              url:        page.url,
-              breadcrumb: page.breadcrumb || undefined,
-              pageType:   page.pageType,
-              crawledAt:  new Date().toISOString(),
+              source:      page.title,
+              title:       page.title,
+              url:         page.url,
+              breadcrumb:  page.breadcrumb || undefined,
+              pageType:    page.pageType,
+              domain:      page.domain,
+              product:     page.product,
+              language:    page.language,
+              headings:    page.headings.length > 0 ? page.headings : undefined,
+              contentHash: page.contentHash,
+              crawledAt:   indexedAtIso,
             },
           }))
 
           try {
-            await addDocChunks(chunks, provider, onWarning)
+            await addDocChunks(chunks, provider, embeddingApiKey, onWarning)
             indexedDates.set(url, new Date().toISOString())
             indexed += chunks.length
             send(`   ✓ ${chunks.length} chunks (${page.pageType}) — "${page.title}"`)
-          } catch (embedErr) {
+          } catch (error) {
             errors++
-            // Detalhe fica só no log do servidor — nunca repassado ao cliente.
-            console.error('[INDEX-DOCS] embedding error:', embedErr instanceof Error ? embedErr.message : embedErr)
-            send(`   ⚠️ falha no embedding desta página, pulando`)
-            // Não interrompe a indexação geral — continua próximo URL
+            const detail = error instanceof Error ? error.message : String(error)
+            console.error('[INDEX-DOCS] embedding error:', detail)
+            if (isAuthLikeError(detail)) {
+              send(`❌ Falha de autenticação no provider de embeddings (${provider}). A chave configurada é inválida ou sem acesso — corrija a chave e reindexe.`)
+              send(`   Detalhe: ${truncateDetail(detail)}`)
+              break
+            }
+            send(`   ⚠️ falha no embedding desta página, pulando — ${truncateDetail(detail)}`)
           }
 
-          // ── Descobrir links filhos ────────────────────────────────────────
           if (depth < maxDepth && visited.size < maxPages) {
             const links = await discoverLinks(url, 15)
             for (const link of links) {
@@ -147,8 +196,8 @@ export async function POST(req: NextRequest) {
         send(`   Erros/404         : ${errors}`)
         send(`   Base total        : ${initialStats.count} → ${finalStats.count} chunks`)
         send(`   Fontes distintas  : ${finalStats.sources.length}`)
-      } catch (err) {
-        console.error('[INDEX-DOCS] fatal error:', err instanceof Error ? err.message : err)
+      } catch (error) {
+        console.error('[INDEX-DOCS] fatal error:', error instanceof Error ? error.message : error)
         send('❌ Erro ao indexar. Veja os logs do servidor para detalhes.')
       } finally {
         controller.close()

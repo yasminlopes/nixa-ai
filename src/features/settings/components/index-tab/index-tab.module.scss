@@ -1,4 +1,3 @@
-@use '../../../../shared/styles/tokens';
 @use '../../../../shared/styles/mixins' as *;
 
 .card {
@@ -24,27 +23,9 @@
   }
 }
 
-.noticeBox {
-  border-radius: var(--radius-md);
-  padding: 12px;
-  display: flex;
-  gap: 8px;
-  background: var(--color-surface-2);
-  border: 1px solid var(--color-border);
-}
-
-.noticeIcon {
-  width: 16px;
-  height: 16px;
-  flex-shrink: 0;
-  margin-top: 2px;
-  color: var(--color-accent);
-}
-
-.noticeText {
-  font-size: 12px;
-  line-height: 1.6;
-  color: var(--color-text-soft);
+// Espaçamento superior para Callouts que aparecem entre outros blocos.
+.spacedTop {
+  margin-top: 12px;
 }
 
 .forceRow {
@@ -119,52 +100,6 @@
   color: var(--color-accent);
 }
 
-.rateLimitBox {
-  margin-top: 12px;
-  display: flex;
-  align-items: flex-start;
-  gap: 12px;
-  border-radius: var(--radius-md);
-  padding: 12px 16px;
-  background: var(--color-accent-soft);
-  border: 1px solid var(--color-accent);
-}
-
-.rateLimitTitle {
-  font-size: 13px;
-  font-weight: var(--font-weight-medium);
-  color: var(--color-accent-deep);
-}
-
-.rateLimitText {
-  font-size: 11.5px;
-  margin-top: 4px;
-  color: var(--color-text-soft);
-}
-
-.runningNotice {
-  margin-top: 12px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  border-radius: var(--radius-md);
-  padding: 10px 12px;
-  background: var(--color-accent-soft);
-  border: 1px solid var(--color-accent);
-}
-
-.runningNoticeIcon {
-  width: 14px;
-  height: 14px;
-  flex-shrink: 0;
-  color: var(--color-accent);
-}
-
-.runningNoticeText {
-  font-size: 11.5px;
-  font-weight: var(--font-weight-medium);
-  color: var(--color-accent-deep);
-}
 
 @keyframes fadeIn {
   from {
@@ -184,10 +119,23 @@
   animation: fadeIn 0.3s ease-in-out forwards;
 }
 
+.stateEyebrowRow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.doneStateIcon {
+  width: 15px;
+  height: 15px;
+  flex-shrink: 0;
+  color: #10b981;
+}
+
 .doneEyebrow {
   font-size: 10.5px;
-  margin-bottom: 8px;
-  color: var(--color-accent);
+  color: #10b981;
   @include uppercase-label;
 }
 
@@ -254,6 +202,85 @@
   font-size: 11px;
   @include font-mono;
   color: var(--color-text-muted);
+}
+
+// ─── Estado de erro ──────────────────────────────────────────────────────────
+
+.errorCard {
+  margin-top: 24px;
+  border-radius: var(--radius-2xl);
+  padding: 24px;
+  background: var(--color-danger-soft);
+  border: 1px solid var(--color-danger);
+  animation: fadeIn 0.3s ease-in-out forwards;
+}
+
+.errorStateIcon {
+  width: 15px;
+  height: 15px;
+  flex-shrink: 0;
+  color: var(--color-danger);
+}
+
+.errorEyebrow {
+  font-size: 10.5px;
+  color: var(--color-danger);
+  @include uppercase-label;
+}
+
+.errorTitle {
+  @include font-display;
+  font-weight: var(--font-weight-semibold);
+  font-size: 24px;
+  line-height: 1.2;
+  margin-bottom: 8px;
+  color: var(--color-text);
+}
+
+.errorText {
+  font-size: 13.5px;
+  color: var(--color-text-soft);
+}
+
+.errorReason {
+  margin-top: 12px;
+  border-radius: var(--radius-md);
+  padding: 10px 12px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-danger);
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--color-danger-deep);
+  @include font-mono;
+}
+
+.retryButton {
+  border-radius: var(--radius-full);
+  padding: 8px 16px;
+  font-size: 12.5px;
+  font-weight: var(--font-weight-medium);
+  color: #fff;
+  background: var(--color-danger);
+  @include transition(opacity);
+
+  &:hover {
+    opacity: 0.9;
+  }
+}
+
+.secondaryButton {
+  border-radius: var(--radius-full);
+  padding: 8px 16px;
+  font-size: 12.5px;
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-soft);
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  @include transition(all);
+
+  &:hover {
+    background: var(--color-hover);
+  }
 }
 
 .submitRow {

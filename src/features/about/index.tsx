@@ -21,7 +21,7 @@ const STACK: Array<[string, string]> = [
   ['Embeddings', 'Gemini · OpenAI · Ollama'],
   ['Vector store', 'JSON local (cosine + léxico)'],
   ['Crawler', 'Cheerio + fetch · 90+ seeds'],
-  ['Segurança', 'AES-256-GCM nas chaves de API'],
+  ['Segurança', 'Chaves cifradas no navegador · nunca salvas no servidor'],
   ['Deploy', 'Local-first · Vercel-ready'],
 ]
 
@@ -127,17 +127,16 @@ export function AboutView() {
         <Section eyebrow="03" title="Variáveis de ambiente">
           <div className={styles.envCard}>
             <pre className={styles.envPre}>
-{`# Obrigatória — deriva a chave AES-256-GCM que criptografa as API keys no servidor
-SETTINGS_ENCRYPTION_KEY=
-
-# Opcionais — fallback compartilhado do site, caso ninguém tenha salvo uma chave
-GEMINI_API_KEY=            # Google AI Studio — gratuito
-OPENAI_API_KEY=
+{`# Nenhuma chave de API em env — elas ficam cifradas no navegador
+# (react-secure-storage) e vão ao servidor a cada request. Tudo opcional:
 
 # Ollama (local, sem chave)
-OLLAMA_BASE_URL=           # default http://localhost:11434
-OLLAMA_MODEL=              # default llama3.2:1b
-OLLAMA_EMBEDDING_MODEL=    # default all-minilm`}
+OLLAMA_BASE_URL=              # default http://localhost:11434
+OLLAMA_MODEL=                 # default llama3.2:1b
+OLLAMA_EMBEDDING_MODEL=       # default all-minilm
+
+# Provider de embedding do índice (gemini | openai | ollama)
+NIXA_EMBEDDING_PROVIDER=      # default gemini`}
             </pre>
           </div>
         </Section>

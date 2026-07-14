@@ -1,5 +1,6 @@
 import { type Provider } from '@/core/providers'
-import { getDecryptedApiKey } from './settings-store'
+
+export type ApiKeyMap = Partial<Record<Provider, string>>
 
 export class MissingApiKeyError extends Error {
   provider: Provider
@@ -11,24 +12,16 @@ export class MissingApiKeyError extends Error {
   }
 }
 
-const ENV_FALLBACK: Partial<Record<Provider, string | undefined>> = {
-  gemini: process.env.GEMINI_API_KEY,
-  openai: process.env.OPENAI_API_KEY,
-}
-
 /**
- * Única porta de entrada pra obter a API key de um provider. Nenhuma rota ou
- * provider de LLM/embeddings precisa saber se a chave veio do storage
- * criptografado ou de uma env var de fallback do servidor — só chamam isto.
+ * Resolve a chave de um provider a partir do mapa enviado pelo cliente (no body
+ * do request, sobre HTTPS). O servidor NUNCA persiste chaves — elas vivem
+ * cifradas no navegador (react-secure-storage) e chegam por requisição.
+ * Ollama é local e não usa chave.
  */
-export async function resolveProviderApiKey(provider: Provider): Promise<string> {
+export function getKeyForProvider(provider: Provider, apiKeys?: ApiKeyMap): string {
   if (provider === 'ollama') return ''
 
-  const stored = await getDecryptedApiKey(provider)
-  if (stored) return stored
-
-  const fallback = ENV_FALLBACK[provider]
-  if (fallback) return fallback
-
-  throw new MissingApiKeyError(provider)
+  const key = apiKeys?.[provider]?.trim()
+  if (!key) throw new MissingApiKeyError(provider)
+  return key
 }

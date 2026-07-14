@@ -28,7 +28,6 @@ export function useCopy(options?: UseCopyOptions): UseCopyReturn {
         await navigator.clipboard.writeText(text)
         setCopied(true)
 
-        // Auto reset após timeout
         const timer = setTimeout(() => {
           setCopied(false)
         }, timeout)

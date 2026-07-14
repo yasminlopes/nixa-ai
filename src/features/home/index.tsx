@@ -7,7 +7,7 @@ import { useRouter } from 'next/navigation'
 import { Conversation } from '@/shared/types'
 import { PanelLeft, KeyRound, ShieldCheck, ArrowRight, Sparkles } from 'lucide-react'
 import clsx from 'clsx'
-import { fetchSettings } from '@/shared/services/settings-service'
+import { getKeyStatus } from '@/shared/utils/api-key-storage'
 import styles from './index.module.scss'
 
 type GateState = 'loading' | 'key' | 'index' | 'done'
@@ -30,8 +30,8 @@ export function HomeView() {
 
   async function checkGate() {
     try {
-      const settings = await fetchSettings()
-      const hasAnyKey = settings.hasKeys.gemini || settings.hasKeys.openai || settings.hasKeys.ollama
+      const status = getKeyStatus()
+      const hasAnyKey = status.gemini || status.openai || status.ollama
       if (!hasAnyKey) { setGateState('key'); return }
 
       const docsRes = await fetch('/api/index-docs')
@@ -39,7 +39,7 @@ export function HomeView() {
       if ((docs.count ?? 0) === 0) { setGateState('index'); return }
       setGateState('done')
     } catch {
-      setGateState('done') // don't block if API is unreachable
+      setGateState('done')
     }
   }
 
@@ -48,7 +48,6 @@ export function HomeView() {
     checkGate()
   }, [checkedOnboarding])
 
-  // Re-check gate whenever WorkspaceModal closes
   useEffect(() => {
     const handler = () => checkGate()
     window.addEventListener('nixa-modal-closed', handler)
@@ -112,12 +111,10 @@ export function HomeView() {
         />
       </main>
 
-      {/* Setup gate */}
       {showGate && (
         <div className={styles.gateOverlay}>
           <div className={styles.gateInner}>
 
-            {/* Step indicator — editorial */}
             <div className={styles.gateSteps}>
               <span style={{ opacity: gateState === 'key' ? 1 : 0.5 }}>
                 {gateState === 'key' ? '01' : '✓'} Chave
@@ -128,7 +125,6 @@ export function HomeView() {
               </span>
             </div>
 
-            {/* Gate card */}
             {gateState === 'key' && (
               <button onClick={() => openModal('settings')} className={styles.gateCard}>
                 <div className={styles.gateCardBody}>

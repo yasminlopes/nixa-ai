@@ -1,4 +1,3 @@
-@use '../../shared/styles/tokens';
 @use '../../shared/styles/mixins' as *;
 
 .overlay {
@@ -74,7 +73,22 @@
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 18px;
+  overflow-y: auto;
+}
+
+.navGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.navGroupLabel {
+  font-size: 10px;
+  @include uppercase-label;
+  color: var(--color-text-muted);
+  padding: 0 12px;
+  margin-bottom: 6px;
 }
 
 .tabButton {
@@ -101,6 +115,13 @@
   opacity: 0.4;
   cursor: not-allowed;
 }
+.tabButtonDanger {
+  color: var(--color-danger);
+
+  &.tabButtonActive {
+    color: var(--color-danger);
+  }
+}
 
 .tabIcon {
   width: 14px;
@@ -114,22 +135,8 @@
   border-radius: var(--radius-full);
   background: var(--color-accent);
 }
-
-.themeRow {
-  margin-top: 16px;
-  padding-top: 16px;
-  padding-left: 4px;
-  padding-right: 4px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  border-top: 1px solid var(--color-border);
-}
-
-.themeLabel {
-  font-size: 10px;
-  @include uppercase-label;
-  color: var(--color-text-muted);
+.tabIndicatorDanger {
+  background: var(--color-danger);
 }
 
 .content {

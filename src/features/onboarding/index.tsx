@@ -13,8 +13,8 @@ import {
 import clsx from 'clsx'
 import { ProviderIcon } from '@/shared/components/provider-icon'
 import { useIsHosted } from '@/shared/hooks/use-is-hosted'
-import { fetchSettings, updateSettings } from '@/shared/services/settings-service'
-import { saveStoredProvider } from '@/shared/utils/llm-settings-storage'
+import { getStoredProvider, saveStoredProvider } from '@/shared/utils/llm-settings-storage'
+import { getKeyStatus } from '@/shared/utils/api-key-storage'
 import { type Provider } from '@/core/providers'
 import styles from './index.module.scss'
 
@@ -49,7 +49,7 @@ export function OnboardingView() {
 
   const nameInputRef = useRef<HTMLInputElement>(null)
   const isHosted = useIsHosted()
-  const visibleProviders = isHosted ? PROVIDERS.filter(p => p.id !== 'ollama') : PROVIDERS
+  const visibleProviders = isHosted ? PROVIDERS.filter(item => item.id !== 'ollama') : PROVIDERS
 
   useEffect(() => {
     const done = localStorage.getItem('nixa-onboarding-v1') === 'done'
@@ -99,17 +99,15 @@ export function OnboardingView() {
     finally { setCheckingDocs(false) }
   }
 
-  async function loadSettings() {
-    const settings = await fetchSettings()
-    setProvider(settings.defaultProvider)
-    setHasKeys(settings.hasKeys)
+  function loadSettings() {
+    setProvider(getStoredProvider() ?? 'gemini')
+    setHasKeys(getKeyStatus())
   }
 
-  async function persistProviderSelection() {
+  function persistProviderSelection() {
     setError(null)
     try {
       saveStoredProvider(provider)
-      await updateSettings({ defaultProvider: provider })
       return true
     } catch {
       setError('Falha ao salvar o modelo escolhido.')
@@ -117,7 +115,7 @@ export function OnboardingView() {
     }
   }
 
-  function wait(ms: number) { return new Promise(r => setTimeout(r, ms)) }
+  function wait(ms: number) { return new Promise(resolve => setTimeout(resolve, ms)) }
 
   async function runIndexQuickScan() {
     setScanPhase('scanning'); setScanTick(0)
@@ -146,7 +144,6 @@ export function OnboardingView() {
 
   if (!ready) return <div className={styles.loadingScreen} />
 
-  // ── Step 0: Welcome ─────────────────────────────────────────────────────────
   if (step === 0) {
     return (
       <main className={styles.welcomeMain}>
@@ -182,11 +179,9 @@ export function OnboardingView() {
     )
   }
 
-  // ── Steps 1–4 ──────────────────────────────────────────────────────────────
   return (
     <main className={styles.main}>
       <div className={styles.container}>
-        {/* Progress indicator */}
         <div className={styles.progressRow}>
           <div className={styles.progressLeft}>
             <span className={styles.brandName}>Nixa</span>
@@ -209,9 +204,7 @@ export function OnboardingView() {
           </div>
         </div>
 
-        {/* Step content */}
         <div className={styles.stepContent}>
-          {/* STEP 1 — name */}
           {step === 1 && (
             <div className={styles.stepBlock}>
               <div>
@@ -229,7 +222,6 @@ export function OnboardingView() {
             </div>
           )}
 
-          {/* STEP 2 — scan */}
           {step === 2 && (
             <div className={styles.stepBlock}>
               <div>
@@ -293,7 +285,6 @@ export function OnboardingView() {
             </div>
           )}
 
-          {/* STEP 3 — provider */}
           {step === 3 && (
             <div className={styles.stepBlock}>
               <div>
@@ -334,7 +325,6 @@ export function OnboardingView() {
             </div>
           )}
 
-          {/* STEP 4 — final */}
           {step === 4 && (
             <div className={styles.stepBlock}>
               <div>
@@ -347,7 +337,7 @@ export function OnboardingView() {
               <div className={styles.checklistCard}>
                 {([
                   { label: `Nome: ${name}`, status: 'ok' as const },
-                  { label: `Modelo: ${PROVIDERS.find(p => p.id === provider)?.label}`, status: 'ok' as const },
+                  { label: `Modelo: ${PROVIDERS.find(item => item.id === provider)?.label}`, status: 'ok' as const },
                   { label: 'Indexação', status: (docsCount && docsCount > 0 ? 'ok' : 'pendente') as 'ok' | 'pendente' },
                 ]).map(({ label, status }, index) => {
                   const done = finalChecklistProgress >= index + 1

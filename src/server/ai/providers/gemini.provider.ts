@@ -1,5 +1,5 @@
 import { GoogleGenerativeAI } from '@google/generative-ai'
-import { LLMParams } from './types'
+import { LLMParams, GenerateResult } from './types'
 import { formatConversationHistory } from '@/core/rag'
 
 const CHAT_MODEL_CANDIDATES = [
@@ -47,12 +47,7 @@ export function extractRetryDelaySeconds(error: unknown): number | null {
   return null
 }
 
-export interface GeminiChatResult {
-  stream: AsyncIterable<string>
-  rateLimitError?: unknown
-}
-
-export async function runGeminiChat(params: LLMParams): Promise<GeminiChatResult> {
+export async function runGeminiChat(params: LLMParams): Promise<GenerateResult> {
   const genAI = new GoogleGenerativeAI(params.apiKey)
   let result: { stream: AsyncIterable<{ text(): string }> } | null = null
   let lastError: unknown

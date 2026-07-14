@@ -1,0 +1,158 @@
+@use '../../../../shared/styles/mixins' as *;
+
+.options {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.option {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  text-align: left;
+  padding: 16px;
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  @include transition(all, 0.15s);
+
+  &:hover:not(.optionActive) {
+    border-color: var(--color-border-strong);
+  }
+}
+
+.optionActive {
+  border-color: var(--color-accent);
+  background: var(--color-accent-soft);
+}
+
+.optionIcon {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-md);
+  flex-shrink: 0;
+  @include flex-center;
+  background: var(--color-surface-2);
+  color: var(--color-text-soft);
+}
+.optionActive .optionIcon {
+  background: var(--color-surface);
+  color: var(--color-accent);
+}
+
+.optionBody {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.optionLabel {
+  font-size: 14px;
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text);
+}
+.optionActive .optionLabel {
+  color: var(--color-accent-deep);
+}
+
+.optionDesc {
+  font-size: 12.5px;
+  line-height: 1.4;
+  color: var(--color-text-soft);
+}
+
+.optionCheck {
+  flex-shrink: 0;
+  color: var(--color-accent);
+}
+
+// ─── Prévia ──────────────────────────────────────────────────────────────
+
+.previewWrap {
+  margin-top: 28px;
+}
+
+.previewLabel {
+  font-size: 10px;
+  @include uppercase-label;
+  color: var(--color-text-muted);
+  margin-bottom: 10px;
+}
+
+.preview {
+  display: flex;
+  height: 140px;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+  background: var(--color-bg);
+}
+
+.previewSidebar {
+  width: 34%;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  border-right: 1px solid var(--color-border);
+  background: var(--color-bg);
+}
+
+.previewLogo {
+  width: 22px;
+  height: 22px;
+  border-radius: var(--radius-sm);
+  background: linear-gradient(135deg, #4F7AFF 0%, #A78BFA 100%);
+  margin-bottom: 4px;
+}
+
+.previewLine {
+  height: 7px;
+  border-radius: var(--radius-full);
+  background: var(--color-surface-3);
+}
+
+.previewMain {
+  flex: 1;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  background: var(--color-bg);
+}
+
+.previewTitle {
+  width: 45%;
+  height: 10px;
+  border-radius: var(--radius-full);
+  background: var(--color-surface-3);
+}
+
+.previewBubble {
+  height: 26px;
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+}
+
+.previewBubbleUser {
+  align-self: flex-end;
+  width: 55%;
+  background: var(--color-ink);
+  border-color: transparent;
+}
+
+.previewHint {
+  margin-top: 12px;
+  font-size: 12px;
+  color: var(--color-text-muted);
+
+  strong {
+    color: var(--color-text-soft);
+    font-weight: var(--font-weight-medium);
+  }
+}

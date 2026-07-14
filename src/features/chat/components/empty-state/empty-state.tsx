@@ -15,8 +15,8 @@ export function EmptyState({ onSuggest }: { onSuggest: (q: string) => void }) {
   const [userName, setUserName] = useState('')
 
   useEffect(() => {
-    const n = localStorage.getItem('nixa-user-name')?.trim()
-    if (n) setUserName(n)
+    const storedName = localStorage.getItem('nixa-user-name')?.trim()
+    if (storedName) setUserName(storedName)
   }, [])
 
   const hour = new Date().getHours()
@@ -46,14 +46,14 @@ export function EmptyState({ onSuggest }: { onSuggest: (q: string) => void }) {
       </p>
 
       <div className={styles.suggestions}>
-        {SUGGESTED.map((q, idx) => (
+        {SUGGESTED.map((suggestion, idx) => (
           <button
-            key={q}
-            onClick={() => onSuggest(q)}
+            key={suggestion}
+            onClick={() => onSuggest(suggestion)}
             style={{ animationDelay: `${0.15 + idx * 0.05}s` }}
             className={clsx(styles.suggestion, 'animate-fadeIn')}
           >
-            <span className={styles.suggestionText}>{q}</span>
+            <span className={styles.suggestionText}>{suggestion}</span>
           </button>
         ))}
       </div>

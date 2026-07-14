@@ -46,8 +46,8 @@ export function Sidebar({
     const handleProfileUpdate = () => loadProfile()
     window.addEventListener('nixa-profile-updated', handleProfileUpdate)
 
-    const handleOpenWorkspace = (e: Event) => {
-      const tab = (e as CustomEvent<{ tab: WorkspaceTab }>).detail?.tab ?? 'index'
+    const handleOpenWorkspace = (event: Event) => {
+      const tab = (event as CustomEvent<{ tab: WorkspaceTab }>).detail?.tab ?? 'index'
       setWorkspaceTab(tab)
       setShowWorkspaceModal(true)
     }
@@ -66,10 +66,14 @@ export function Sidebar({
       const parsed: Conversation[] = JSON.parse(stored)
       setConversations(
         parsed
-          .map(c => ({ ...c, createdAt: new Date(c.createdAt), updatedAt: new Date(c.updatedAt) }))
+          .map(conversation => ({
+            ...conversation,
+            createdAt: new Date(conversation.createdAt),
+            updatedAt: new Date(conversation.updatedAt),
+          }))
           .sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime())
       )
-    } catch { /* ignore */ }
+    } catch {}
   }
 
   function loadProfile() {
@@ -79,9 +83,9 @@ export function Sidebar({
     setUserAvatar(avatar)
   }
 
-  function deleteConversation(e: MouseEvent, id: string) {
-    e.stopPropagation()
-    const updated = conversations.filter(c => c.id !== id)
+  function deleteConversation(event: MouseEvent, id: string) {
+    event.stopPropagation()
+    const updated = conversations.filter(conversation => conversation.id !== id)
     setConversations(updated)
     localStorage.setItem('nixa-conversations', JSON.stringify(updated))
     if (activeId === id) { onNewChat(); onCloseMobile?.() }
@@ -98,7 +102,6 @@ export function Sidebar({
   return (
     <>
       <aside className={clsx(styles.aside, collapsed ? styles.asideCollapsed : styles.asideExpanded)}>
-        {/* Header */}
         <div className={styles.header}>
           <div className={styles.headerRow}>
             {!collapsed && (
@@ -130,7 +133,6 @@ export function Sidebar({
             </button>
           </div>
 
-          {/* New chat — pill preto */}
           <button
             onClick={handleNewChat}
             className={clsx(
@@ -144,7 +146,6 @@ export function Sidebar({
           </button>
         </div>
 
-        {/* Conversations */}
         <div className={styles.list}>
           {collapsed ? (
             <div className={styles.collapsedList}>
@@ -181,7 +182,7 @@ export function Sidebar({
                       <span className={styles.itemTitle}>{conv.title}</span>
                       <Trash2
                         className={styles.itemDelete}
-                        onClick={e => deleteConversation(e, conv.id)}
+                        onClick={event => deleteConversation(event, conv.id)}
                       />
                     </button>
                   )
@@ -191,7 +192,6 @@ export function Sidebar({
           )}
         </div>
 
-        {/* Footer — user pill */}
         <div className={styles.footer}>
           <button
             onClick={() => openWorkspaceTab('profile')}
@@ -249,8 +249,8 @@ function groupByDate(conversations: Conversation[]): Record<string, Conversation
   const yesterday = yesterdayDate.toDateString()
   const groups: Record<string, Conversation[]> = {}
   for (const conv of conversations) {
-    const d = new Date(conv.updatedAt).toDateString()
-    const label = d === today ? 'Hoje' : d === yesterday ? 'Ontem' : 'Anteriores'
+    const dateString = new Date(conv.updatedAt).toDateString()
+    const label = dateString === today ? 'Hoje' : dateString === yesterday ? 'Ontem' : 'Anteriores'
     if (!groups[label]) groups[label] = []
     groups[label].push(conv)
   }

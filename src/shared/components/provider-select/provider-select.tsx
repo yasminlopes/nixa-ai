@@ -38,32 +38,32 @@ export function ProviderSelect({
 }: ProviderSelectProps) {
   const [open, setOpen] = useState(false)
   const containerRef = useRef<HTMLDivElement>(null)
-  const current = OPTIONS.find(o => o.value === value) ?? OPTIONS[0]
+  const current = OPTIONS.find(option => option.value === value) ?? OPTIONS[0]
 
   useEffect(() => {
-    function handleClick(e: MouseEvent) {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) setOpen(false)
+    function handleClick(event: MouseEvent) {
+      if (containerRef.current && !containerRef.current.contains(event.target as Node)) setOpen(false)
     }
     if (open) document.addEventListener('mousedown', handleClick)
     return () => document.removeEventListener('mousedown', handleClick)
   }, [open])
 
-  const availableOptions = OPTIONS.filter(o => hasKeys[o.value])
+  const availableOptions = OPTIONS.filter(option => hasKeys[option.value])
 
-  function handleKeyDown(e: KeyboardEvent) {
-    if (e.key === 'Escape') { setOpen(false); return }
-    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setOpen(v => !v); return }
+  function handleKeyDown(event: KeyboardEvent) {
+    if (event.key === 'Escape') { setOpen(false); return }
+    if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); setOpen(prev => !prev); return }
     if (!open || availableOptions.length === 0) return
-    const idx = availableOptions.findIndex(o => o.value === value)
-    if (e.key === 'ArrowDown') { e.preventDefault(); onChange(availableOptions[(idx + 1) % availableOptions.length].value) }
-    if (e.key === 'ArrowUp') { e.preventDefault(); onChange(availableOptions[(idx - 1 + availableOptions.length) % availableOptions.length].value) }
+    const idx = availableOptions.findIndex(option => option.value === value)
+    if (event.key === 'ArrowDown') { event.preventDefault(); onChange(availableOptions[(idx + 1) % availableOptions.length].value) }
+    if (event.key === 'ArrowUp') { event.preventDefault(); onChange(availableOptions[(idx - 1 + availableOptions.length) % availableOptions.length].value) }
   }
 
   return (
     <div ref={containerRef} className={styles.wrapper}>
       <button
         type="button"
-        onClick={() => !disabled && setOpen(v => !v)}
+        onClick={() => !disabled && setOpen(prev => !prev)}
         onKeyDown={handleKeyDown}
         disabled={disabled}
         aria-haspopup="listbox"

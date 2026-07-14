@@ -7,7 +7,6 @@ function isRateLimitError(error: unknown): boolean {
 }
 
 function parseRetryDelay(error: unknown, attempt: number, headers?: Headers): number {
-  // Check retry-after header first
   if (headers) {
     const retryAfter = headers.get('retry-after')
     if (retryAfter) {
@@ -22,18 +21,13 @@ function parseRetryDelay(error: unknown, attempt: number, headers?: Headers): nu
     return Math.ceil(parseFloat(match[1])) * 1000
   }
 
-  // Exponential backoff: 30s, 60s, 90s for attempts 0, 1, 2
   const exponentialDelay = (attempt + 1) * 30_000
   return Math.min(exponentialDelay, 90_000)
 }
 
-const IS_FREE_TIER = process.env.FREE_TIER === 'true'
-
-// Free tier: text-embedding-3-small (1536 dims, mais barato)
-// Paid tier: text-embedding-3-large (3072 dims, maior qualidade)
-// Override via OPENAI_EMBEDDING_MODEL env var
-// AVISO: trocar entre tiers exige re-indexação (dimensões diferentes)
-const DEFAULT_OPENAI_EMBEDDING_MODEL = IS_FREE_TIER ? 'text-embedding-3-small' : 'text-embedding-3-large'
+// Modelo fixo. Trocar o default exige re-indexar (dimensões diferentes) — por
+// isso não é mais um toggle de ambiente. Override pontual via env se precisar.
+const DEFAULT_OPENAI_EMBEDDING_MODEL = 'text-embedding-3-small'
 
 export async function getOpenAIEmbedding(
   text: string,
@@ -45,7 +39,7 @@ export async function getOpenAIEmbedding(
 
   for (let attempt = 0; attempt < 3; attempt++) {
     try {
-      const res = await fetch('https://api.openai.com/v1/embeddings', {
+      const response = await fetch('https://api.openai.com/v1/embeddings', {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${apiKey}`,
@@ -59,21 +53,21 @@ export async function getOpenAIEmbedding(
         signal: AbortSignal.timeout(15000),
       })
 
-      if (!res.ok) {
-        const data = (await res.json().catch(() => ({}))) as { error?: { message?: string } }
-        const errMsg = data.error?.message ?? `OpenAI embedding failed (${res.status})`
+      if (!response.ok) {
+        const data = (await response.json().catch(() => ({}))) as { error?: { message?: string } }
+        const errMsg = data.error?.message ?? `OpenAI embedding failed (${response.status})`
 
-        if (res.status === 429 || isRateLimitError(data.error)) {
-          const wait = parseRetryDelay(data.error, attempt, res.headers)
+        if (response.status === 429 || isRateLimitError(data.error)) {
+          const wait = parseRetryDelay(data.error, attempt, response.headers)
           if (onWarning) onWarning(`OpenAI rate limit. Aguardando ${Math.round(wait / 1000)}s... (tentativa ${attempt + 1}/3)`)
-          await new Promise(r => setTimeout(r, wait))
+          await new Promise(resolve => setTimeout(resolve, wait))
           continue
         }
 
         throw new Error(errMsg)
       }
 
-      const data = (await res.json()) as { data?: Array<{ embedding?: number[] }> }
+      const data = (await response.json()) as { data?: Array<{ embedding?: number[] }> }
       const embedding = data.data?.[0]?.embedding
 
       if (!embedding || embedding.length === 0) {
@@ -81,9 +75,9 @@ export async function getOpenAIEmbedding(
       }
 
       return { embedding, model, cached: false }
-    } catch (err) {
-      if (attempt === 2) throw err
-      await new Promise(r => setTimeout(r, 500))
+    } catch (error) {
+      if (attempt === 2) throw error
+      await new Promise(resolve => setTimeout(resolve, 500))
     }
   }
 

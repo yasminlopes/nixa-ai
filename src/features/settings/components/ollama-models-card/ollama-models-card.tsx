@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Check, Copy } from 'lucide-react'
+import { Check, Copy, Zap, Brain, Laptop } from 'lucide-react'
 import clsx from 'clsx'
 import { LlamaIcon } from '@/shared/components/llama-icon'
 import styles from './ollama-models-card.module.scss'
@@ -26,6 +26,12 @@ const OLLAMA_MODELS: OllamaModel[] = [
   { name: 'nomic-embed-text', size: '274 MB',  desc: 'Mais qualidade (768-dim)',              pull: 'ollama pull nomic-embed-text', badge: 'qualidade',   category: 'embedding' },
 ]
 
+const USAGE_GUIDE = [
+  { icon: Zap,    label: 'Respostas rápidas',  model: 'llama3.2:1b' },
+  { icon: Brain,  label: 'Melhor qualidade',   model: 'llama3.1' },
+  { icon: Laptop, label: 'Máquinas simples',   model: 'qwen2.5:0.5b' },
+]
+
 export function OllamaModelsCard() {
   const [copiedCmd, setCopiedCmd] = useState<string | null>(null)
   const [tab, setTab] = useState<'chat' | 'embedding'>('chat')
@@ -36,7 +42,7 @@ export function OllamaModelsCard() {
     setTimeout(() => setCopiedCmd(null), 1800)
   }
 
-  const models = OLLAMA_MODELS.filter(m => m.category === tab)
+  const models = OLLAMA_MODELS.filter(model => model.category === tab)
 
   return (
     <div className={styles.card}>
@@ -46,44 +52,59 @@ export function OllamaModelsCard() {
         </div>
         <div className={styles.headerBody}>
           <p className={styles.headerTitle}>Modelos recomendados</p>
-          <p className={styles.headerSubtitle}>Quanto maior, melhor a qualidade — mas consome mais RAM.</p>
+          <p className={styles.headerSubtitle}>
+            Baixe com <code className={styles.headerCode}>ollama pull</code> e defina em{' '}
+            <code className={styles.headerCode}>OLLAMA_MODEL</code>. Quanto maior, melhor a qualidade — e mais RAM.
+          </p>
         </div>
       </div>
 
       <div className={styles.tabs}>
-        {(['chat', 'embedding'] as const).map(t => (
+        {(['chat', 'embedding'] as const).map(tabId => (
           <button
-            key={t}
-            onClick={() => setTab(t)}
-            className={clsx(styles.tab, tab === t && styles.tabActive)}
+            key={tabId}
+            onClick={() => setTab(tabId)}
+            className={clsx(styles.tab, tab === tabId && styles.tabActive)}
           >
-            {t === 'chat' ? 'Chat (LLM)' : 'Embeddings'}
+            {tabId === 'chat' ? 'Chat (LLM)' : 'Embeddings'}
           </button>
         ))}
       </div>
 
+      {tab === 'chat' && (
+        <div className={styles.usageGuide}>
+          {USAGE_GUIDE.map(({ icon: Icon, label, model }) => (
+            <div key={model} className={styles.usageItem}>
+              <Icon size={15} className={styles.usageIcon} aria-hidden="true" />
+              <span className={styles.usageLabel}>{label}</span>
+              <code className={styles.usageModel}>{model}</code>
+            </div>
+          ))}
+        </div>
+      )}
+
       <div className={styles.list}>
-        {models.map(m => (
-          <div key={m.name} className={styles.item}>
+        {models.map(model => (
+          <div key={model.name} className={styles.item}>
             <div className={styles.itemBody}>
               <div className={styles.itemHead}>
-                <code className={styles.itemName}>{m.name}</code>
-                <span className={styles.itemSize}>{m.size}</span>
-                {m.badge && (
-                  <span className={clsx(styles.itemBadge, m.badge === 'recomendado' && styles.itemBadgeRecommended)}>
-                    {m.badge}
+                <code className={styles.itemName}>{model.name}</code>
+                <span className={styles.itemSize}>{model.size}</span>
+                {model.badge && (
+                  <span className={clsx(styles.itemBadge, model.badge === 'recomendado' && styles.itemBadgeRecommended)}>
+                    {model.badge}
                   </span>
                 )}
               </div>
-              <p className={styles.itemDesc}>{m.desc}</p>
+              <p className={styles.itemDesc}>{model.desc}</p>
             </div>
             <button
-              onClick={() => copyCommand(m.pull)}
-              className={clsx(styles.copyButton, copiedCmd === m.pull && styles.copyButtonActive)}
-              title={m.pull}
+              onClick={() => copyCommand(model.pull)}
+              className={clsx(styles.copyButton, copiedCmd === model.pull && styles.copyButtonActive)}
+              title={model.pull}
             >
-              {copiedCmd === m.pull ? <Check size={12} /> : <Copy size={12} />}
-              {copiedCmd === m.pull ? 'copiado' : 'copiar pull'}
+              {copiedCmd === model.pull ? <Check size={12} /> : <Copy size={12} />}
+              {copiedCmd === model.pull ? 'copiado' : 'copiar'}
             </button>
           </div>
         ))}

@@ -24,8 +24,8 @@ export function Modal({ open, onClose, children, className, disableDismiss = fal
 
   useEffect(() => {
     if (!open || disableDismiss) return
-    function handleKeyDown(e: KeyboardEvent) {
-      if (e.key === 'Escape') onClose()
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === 'Escape') onClose()
     }
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
@@ -33,9 +33,9 @@ export function Modal({ open, onClose, children, className, disableDismiss = fal
 
   if (!mounted || !open) return null
 
-  function handleOverlayMouseDown(e: MouseEvent<HTMLDivElement>) {
+  function handleOverlayMouseDown(event: MouseEvent<HTMLDivElement>) {
     if (disableDismiss) return
-    if (e.target === e.currentTarget) onClose()
+    if (event.target === event.currentTarget) onClose()
   }
 
   return createPortal(

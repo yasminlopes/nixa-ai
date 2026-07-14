@@ -1,21 +1,33 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { AlertTriangle, Check, ShieldCheck, X } from 'lucide-react'
+import { AlertTriangle, Check, Lock, Trash2, Server, Cpu } from 'lucide-react'
+import clsx from 'clsx'
 import { type Provider } from '@/core/providers'
 import { ProviderIcon } from '@/shared/components/provider-icon'
 import { useIsHosted } from '@/shared/hooks/use-is-hosted'
-import { fetchSettings, updateSettings, removeApiKey } from '@/shared/services/settings-service'
-import { saveStoredProvider } from '@/shared/utils/llm-settings-storage'
+import {
+  getKeyStatus,
+  getMaskedKey,
+  setApiKey,
+  removeApiKey as removeStoredKey,
+  getKeysUpdatedAt,
+} from '@/shared/utils/api-key-storage'
+import { getStoredProvider, saveStoredProvider } from '@/shared/utils/llm-settings-storage'
 import { SectionHeader } from '../section-header'
 import { OllamaModelsCard } from '../ollama-models-card'
 import styles from './settings-tab.module.scss'
 
-const PROVIDERS: Array<{ id: Provider; label: string; placeholder: string }> = [
-  { id: 'gemini', label: 'Google Gemini', placeholder: 'AIza...' },
-  { id: 'openai', label: 'OpenAI (GPT)', placeholder: 'sk-...' },
-  { id: 'ollama', label: 'Ollama (local)', placeholder: 'Sem chave — define OLLAMA_BASE_URL no .env' },
+type ProviderMeta = { id: Provider; name: string; type: 'Cloud' | 'Local'; placeholder: string }
+
+const PROVIDERS: ProviderMeta[] = [
+  { id: 'gemini', name: 'Gemini', type: 'Cloud', placeholder: 'AIza...' },
+  { id: 'openai', name: 'OpenAI', type: 'Cloud', placeholder: 'sk-...' },
+  { id: 'ollama', name: 'Ollama', type: 'Local', placeholder: '' },
 ]
+
+const OLLAMA_DEFAULT_SERVER = 'localhost:11434'
+const OLLAMA_DEFAULT_MODEL = 'llama3.2:1b'
 
 type SaveStatus = 'idle' | 'saving' | 'saved' | 'error'
 
@@ -30,13 +42,22 @@ export function SettingsTab() {
   const [maskedKeys, setMaskedKeys] = useState<Partial<Record<Provider, string>>>({})
   const [keyValue, setKeyValue] = useState('')
 
-  async function loadSettings() {
-    const settings = await fetchSettings()
-    setDefaultProvider(settings.defaultProvider)
-    setInitialProvider(settings.defaultProvider)
-    setUpdatedAt(settings.updatedAt)
-    setHasKeys(settings.hasKeys)
-    setMaskedKeys(settings.maskedKeys)
+  function buildMaskedKeys(): Partial<Record<Provider, string>> {
+    const masked: Partial<Record<Provider, string>> = {}
+    for (const provider of ['gemini', 'openai'] as Provider[]) {
+      const value = getMaskedKey(provider)
+      if (value) masked[provider] = value
+    }
+    return masked
+  }
+
+  function loadSettings() {
+    const stored = getStoredProvider() ?? 'gemini'
+    setDefaultProvider(stored)
+    setInitialProvider(stored)
+    setUpdatedAt(getKeysUpdatedAt())
+    setHasKeys(getKeyStatus())
+    setMaskedKeys(buildMaskedKeys())
     setLoading(false)
   }
 
@@ -54,102 +75,106 @@ export function SettingsTab() {
     if (saveStatus !== 'idle') setSaveStatus('idle')
   }
 
-  const hasChanges =
-    defaultProvider !== initialProvider ||
-    keyValue.trim().length > 0
+  const hasChanges = defaultProvider !== initialProvider || keyValue.trim().length > 0
 
-  async function handleSave() {
+  function handleCancel() {
+    setDefaultProvider(initialProvider)
+    setKeyValue('')
+    setSaveStatus('idle')
+    setError(null)
+  }
+
+  function handleSave() {
     if (!hasChanges) return
     setSaveStatus('saving')
     setError(null)
     try {
-      const apiKeys = keyValue.trim() ? { [defaultProvider]: keyValue.trim() } : undefined
-      const saved = await updateSettings({ defaultProvider, apiKeys })
+      if (keyValue.trim()) setApiKey(defaultProvider, keyValue.trim())
       saveStoredProvider(defaultProvider)
-      setUpdatedAt(saved.updatedAt)
-      setHasKeys(saved.hasKeys)
-      setMaskedKeys(saved.maskedKeys)
+      setUpdatedAt(getKeysUpdatedAt())
+      setHasKeys(getKeyStatus())
+      setMaskedKeys(buildMaskedKeys())
       setKeyValue('')
       setInitialProvider(defaultProvider)
       setSaveStatus('saved')
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Falha ao salvar configurações')
+    } catch (error) {
+      setError(error instanceof Error ? error.message : 'Falha ao salvar configurações')
       setSaveStatus('error')
     }
   }
 
-  async function handleRemoveKey() {
+  function handleRemoveKey() {
     setError(null)
     try {
-      const saved = await removeApiKey(defaultProvider)
-      setHasKeys(saved.hasKeys)
-      setMaskedKeys(saved.maskedKeys)
-      setUpdatedAt(saved.updatedAt)
+      removeStoredKey(defaultProvider)
+      setHasKeys(getKeyStatus())
+      setMaskedKeys(buildMaskedKeys())
+      setUpdatedAt(getKeysUpdatedAt())
       setKeyValue('')
       setSaveStatus('idle')
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Falha ao remover a chave')
+    } catch (error) {
+      setError(error instanceof Error ? error.message : 'Falha ao remover a chave')
     }
   }
 
-  const current = PROVIDERS.find(p => p.id === defaultProvider)!
+  const current = PROVIDERS.find(provider => provider.id === defaultProvider)!
   const isOllama = defaultProvider === 'ollama'
   const isHosted = useIsHosted()
-  const saveDisabled = loading || saveStatus === 'saving' || saveStatus === 'saved' || !hasChanges
   const maskedKey = maskedKeys[defaultProvider]
 
+  function providerStatus(id: Provider): { label: string; tone: 'connected' | 'none' | 'local' } {
+    if (id === 'ollama') return { label: 'Local', tone: 'local' }
+    return hasKeys[id] ? { label: 'Conectado', tone: 'connected' } : { label: 'Sem chave', tone: 'none' }
+  }
+
   return (
-    <div>
+    <div className={styles.wrapper}>
       <SectionHeader
-        eyebrow="Provedores"
-        title="LLM e chaves."
-        subtitle="Escolha o modelo padrão e configure as chaves — armazenadas criptografadas no servidor."
+        eyebrow="Nixa AI"
+        title="Modelos de IA."
+        subtitle="Configure qual inteligência a Nixa utiliza para gerar respostas."
       />
 
-      <div className={styles.providerChips}>
-        {PROVIDERS.map(p => {
-          const active = defaultProvider === p.id
-          return (
-            <button
-              key={p.id}
-              onClick={() => selectProvider(p.id)}
-              className={styles.chip}
-              style={{
-                background: active ? 'var(--color-accent)' : 'var(--color-surface)',
-                color: active ? '#FFFFFF' : 'var(--color-text-soft)',
-                border: `1px solid ${active ? 'var(--color-accent)' : 'var(--color-border)'}`,
-              }}
-            >
-              <ProviderIcon provider={p.id} />
-              {p.label}
-              {hasKeys[p.id] && (
-                <span
-                  className={styles.chipDot}
-                  style={{ background: active ? 'rgba(255,255,255,0.7)' : 'var(--color-accent)' }}
-                />
-              )}
-            </button>
-          )
-        })}
-      </div>
-
-      <div className={styles.card}>
-        <div className={styles.cardHeader}>
-          <div className={styles.cardHeaderLeft}>
-            <ProviderIcon provider={defaultProvider} />
-            <span className={styles.cardHeaderLabel}>{current.label}</span>
-          </div>
-          <span
-            className={styles.statusBadge}
-            style={{ color: hasKeys[defaultProvider] ? 'var(--color-accent)' : 'var(--color-text-muted)' }}
-          >
-            {hasKeys[defaultProvider] ? (isOllama ? 'local' : 'chave salva') : 'sem chave'}
-          </span>
+      <section className={styles.section}>
+        <p className={styles.sectionLabel}>Provedor</p>
+        <div className={styles.providerGrid}>
+          {PROVIDERS.map(provider => {
+            const active = defaultProvider === provider.id
+            const status = providerStatus(provider.id)
+            return (
+              <button
+                key={provider.id}
+                onClick={() => selectProvider(provider.id)}
+                className={clsx(styles.providerCard, active && styles.providerCardActive)}
+                aria-pressed={active}
+              >
+                <span className={styles.providerCardTop}>
+                  <ProviderIcon provider={provider.id} />
+                  <span className={styles.providerName}>{provider.name}</span>
+                </span>
+                <span className={styles.providerType}>{provider.type}</span>
+                <span className={styles.providerStatus}>
+                  <span className={clsx(styles.dot, styles[`dot_${status.tone}`])} />
+                  {status.label}
+                </span>
+              </button>
+            )
+          })}
         </div>
+      </section>
+
+      <section className={styles.section}>
+        <p className={styles.sectionLabel}>Configuração</p>
 
         {!isOllama && (
-          <>
+          <div className={styles.card}>
+            <div className={styles.configHead}>
+              <ProviderIcon provider={defaultProvider} />
+              <span className={styles.configTitle}>{current.name}</span>
+            </div>
+            <label className={styles.fieldLabel} htmlFor="api-key">API Key</label>
             <input
+              id="api-key"
               type="password"
               value={keyValue}
               onChange={e => onKeyChange(e.target.value)}
@@ -159,26 +184,47 @@ export function SettingsTab() {
             />
             {hasKeys[defaultProvider] && (
               <div className={styles.keyStatusRow}>
-                <span className={styles.keyStatusText}>
-                  Chave atual: <code className={styles.inlineCode}>{maskedKey}</code>
+                <span className={styles.keyConfigured}>
+                  <Check size={13} strokeWidth={2.75} />
+                  Chave configurada
                 </span>
                 <button onClick={handleRemoveKey} className={styles.removeKeyButton} type="button">
-                  <X className="w-3 h-3" />
+                  <Trash2 size={13} />
                   Remover
                 </button>
               </div>
             )}
-          </>
+          </div>
         )}
 
         {isOllama && (
-          <p className={styles.ollamaHint}>
-            Ollama roda local, sem chave. Apenas certifique que{' '}
-            <code className={styles.inlineCode}>ollama serve</code>
-            {' '}está rodando.
-          </p>
+          <div className={styles.card}>
+            <div className={styles.configHead}>
+              <span className={styles.ollamaStatus}>
+                <span className={clsx(styles.dot, styles.dot_local)} />
+                Ollama · local
+              </span>
+            </div>
+            <div className={styles.infoGrid}>
+              <div className={styles.infoRow}>
+                <Server size={14} className={styles.infoIcon} />
+                <span className={styles.infoKey}>Servidor</span>
+                <code className={styles.infoValue}>{OLLAMA_DEFAULT_SERVER}</code>
+                <span className={styles.infoHint}>padrão</span>
+              </div>
+              <div className={styles.infoRow}>
+                <Cpu size={14} className={styles.infoIcon} />
+                <span className={styles.infoKey}>Modelo</span>
+                <code className={styles.infoValue}>{OLLAMA_DEFAULT_MODEL}</code>
+                <span className={styles.infoHint}>padrão</span>
+              </div>
+            </div>
+            <p className={styles.ollamaHint}>
+              Roda 100% local, sem chave. Basta ter o <code className={styles.inlineCode}>ollama serve</code> ativo.
+            </p>
+          </div>
         )}
-      </div>
+      </section>
 
       {isOllama && isHosted && (
         <div className={styles.hostedNotice}>
@@ -207,14 +253,18 @@ export function SettingsTab() {
         </div>
       )}
 
-      {isOllama && <OllamaModelsCard />}
+      {isOllama && (
+        <section className={styles.section}>
+          <OllamaModelsCard />
+        </section>
+      )}
 
-      <div className={styles.footerNotice}>
-        <ShieldCheck className={styles.footerNoticeIcon} />
+      <div className={styles.securityNotice}>
+        <Lock className={styles.securityIcon} />
         <span>
-          Chaves criptografadas (AES-256-GCM) e armazenadas só no servidor — nunca trafegam de volta pro navegador.
+          Suas chaves ficam cifradas no seu navegador e são enviadas direto ao provedor — nunca ficam salvas no servidor.
           {updatedAt && (
-            <span className={styles.footerNoticeMuted}>
+            <span className={styles.securityMuted}>
               {' '}· salvo em {new Date(updatedAt).toLocaleString('pt-BR')}
             </span>
           )}
@@ -223,34 +273,34 @@ export function SettingsTab() {
 
       {error && <p className={styles.errorText}>{error}</p>}
 
-      <div className={styles.submitRow}>
-        <button
-          onClick={handleSave}
-          disabled={saveDisabled}
-          className={styles.saveButton}
-          style={{
-            background:
-              saveStatus === 'saved' ? 'var(--color-surface-2)' :
-              !hasChanges            ? 'var(--color-surface-2)' :
-              'var(--color-accent)',
-            color:
-              saveStatus === 'saved' ? 'var(--color-accent)' :
-              !hasChanges            ? 'var(--color-text-muted)' :
-              '#FFFFFF',
-            border: saveStatus === 'saved' || !hasChanges
-              ? '1px solid var(--color-border)'
-              : '1px solid transparent',
-          }}
-        >
-          {saveStatus === 'saving' && 'Salvando…'}
-          {saveStatus === 'saved' && (
-            <>
-              <Check size={14} strokeWidth={2.75} />
-              Salvo
-            </>
+      <div className={styles.actionBar}>
+        <span className={styles.actionStatus}>
+          {saveStatus === 'saved' && !hasChanges ? (
+            <><Check size={14} strokeWidth={2.75} className={styles.actionStatusSaved} /> Tudo salvo</>
+          ) : hasChanges ? (
+            <><span className={styles.actionStatusDot} /> Alterações pendentes</>
+          ) : (
+            <span className={styles.actionStatusMuted}>Nenhuma alteração</span>
           )}
-          {(saveStatus === 'idle' || saveStatus === 'error') && (hasChanges ? 'Salvar' : 'Sem alterações')}
-        </button>
+        </span>
+        <div className={styles.actionButtons}>
+          <button
+            onClick={handleCancel}
+            disabled={!hasChanges || saveStatus === 'saving'}
+            className={styles.cancelButton}
+            type="button"
+          >
+            Cancelar
+          </button>
+          <button
+            onClick={handleSave}
+            disabled={loading || saveStatus === 'saving' || !hasChanges}
+            className={styles.saveButton}
+            type="button"
+          >
+            {saveStatus === 'saving' ? 'Salvando…' : 'Salvar'}
+          </button>
+        </div>
       </div>
     </div>
   )

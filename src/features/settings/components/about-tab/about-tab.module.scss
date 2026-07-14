@@ -1,22 +1,222 @@
-@use '../../../../shared/styles/tokens';
 @use '../../../../shared/styles/mixins' as *;
 
 .wrapper > * + * {
-  margin-top: 24px;
+  margin-top: 28px;
 }
 
-.card {
+.lead {
+  font-size: 14px;
+  line-height: 1.65;
+  color: var(--color-text-soft);
+  max-width: 68ch;
+}
+
+// ─── Métricas ────────────────────────────────────────────────────────────────
+
+.metricGrid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+
+  @include sm-up {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.metricCard {
+  display: flex;
+  align-items: center;
+  gap: 12px;
   border-radius: var(--radius-xl);
-  padding: 24px;
+  padding: 16px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  @include transition(border-color);
+
+  &:hover {
+    border-color: var(--color-border-strong);
+  }
+}
+
+.metricIcon {
+  @include flex-center;
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+  border-radius: var(--radius-lg);
+  background: var(--color-accent-soft);
+  color: var(--color-accent);
+}
+
+.metricBody {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.metricLabel {
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
+.metricValue {
+  font-size: 14px;
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text);
+  @include truncate;
+}
+
+// ─── Seções ──────────────────────────────────────────────────────────────────
+
+.sectionTitle {
+  @include font-display;
+  font-weight: var(--font-weight-semibold);
+  font-size: 17px;
+  color: var(--color-text);
+  margin-bottom: 16px;
+}
+
+// ─── Como funciona (fluxo) ───────────────────────────────────────────────────
+
+.steps {
+  display: flex;
+  flex-direction: column;
+}
+
+.stepItem {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.stepCard {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  width: 100%;
+  border-radius: var(--radius-xl);
+  padding: 16px;
   background: var(--color-surface);
   border: 1px solid var(--color-border);
 }
 
-.cardLabel {
-  font-size: 10.5px;
+.stepIcon {
+  @include flex-center;
+  width: 38px;
+  height: 38px;
+  flex-shrink: 0;
+  border-radius: var(--radius-lg);
+  background: var(--color-accent-soft);
+  color: var(--color-accent);
+}
+
+.stepTitle {
+  font-size: 14px;
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text);
+  margin-bottom: 3px;
+}
+
+.stepDesc {
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--color-text-soft);
+}
+
+.stepArrow {
+  color: var(--color-text-muted);
+  margin: 8px 0;
+  flex-shrink: 0;
+}
+
+// ─── Tecnologias (chips) ─────────────────────────────────────────────────────
+
+.techGroups {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.techGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.techGroupLabel {
+  font-size: 10px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  border-radius: var(--radius-full);
+  padding: 5px 12px;
+  font-size: 12.5px;
+  font-weight: var(--font-weight-medium);
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  color: var(--color-text-soft);
+}
+
+// ─── Detalhes técnicos (collapsible) ─────────────────────────────────────────
+
+.details {
+  border-radius: var(--radius-xl);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  overflow: hidden;
+}
+
+.detailsSummary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 14px 18px;
+  font-size: 13px;
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-soft);
+  cursor: pointer;
+  list-style: none;
+  user-select: none;
+  @include transition(color);
+
+  &::-webkit-details-marker {
+    display: none;
+  }
+  &:hover {
+    color: var(--color-text);
+  }
+  &:focus-visible {
+    @include focus-ring;
+  }
+}
+
+.details[open] .detailsSummary {
+  border-bottom: 1px solid var(--color-border);
+  color: var(--color-text);
+}
+
+.detailsBody {
+  padding: 18px;
+}
+
+.detailsIntro {
+  font-size: 12.5px;
   margin-bottom: 16px;
   color: var(--color-text-muted);
-  @include uppercase-label;
 }
 
 .archList {
@@ -52,105 +252,16 @@
   color: var(--color-text-soft);
 }
 
-.stackGrid {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 12px;
-  font-size: 13px;
-
-  @include sm-up {
-    grid-template-columns: 1fr 1fr;
-  }
-}
-
-.stackItem {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.stackKey {
-  font-size: 10px;
-  letter-spacing: 0.15em;
-  text-transform: uppercase;
-  @include font-mono;
-  color: var(--color-text-muted);
-}
-
-.stackValue {
-  color: var(--color-text);
-}
-
-.flowRow {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 8px;
-  font-size: 11.5px;
-}
-.flowRow + .flowRow {
-  margin-top: 12px;
-}
-
-.flowStep {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.flowArrow {
-  color: var(--color-text-muted);
-}
-
-.flowTag {
-  display: inline-flex;
-  align-items: center;
-  border-radius: var(--radius-md);
-  padding: 4px 10px;
-  @include font-mono;
-  background: var(--color-surface-2);
-  border: 1px solid var(--color-border);
-  color: var(--color-text-soft);
-}
-.flowTagHighlight {
-  background: var(--color-accent-soft);
-  color: var(--color-accent-deep);
-}
-
-.envList {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  font-size: 13px;
-}
-
-.envRow {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  align-items: baseline;
-}
-
-.envKey {
-  display: inline-flex;
-  align-items: center;
-  border-radius: var(--radius-md);
-  padding: 2px 8px;
-  font-size: 11px;
-  @include font-mono;
-  background: var(--color-surface-2);
-  border: 1px solid var(--color-border);
-  color: var(--color-text-soft);
-}
-
-.envDesc {
-  color: var(--color-text-soft);
-}
+// ─── Créditos ────────────────────────────────────────────────────────────────
 
 .credits {
   display: flex;
   flex-direction: column;
   gap: 12px;
+  border-radius: var(--radius-xl);
+  padding: 24px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
 
   @include sm-up {
     flex-direction: row;

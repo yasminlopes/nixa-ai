@@ -3,23 +3,23 @@ import { DocChunk, Message } from '@/shared/types'
 function compressChunk(text: string, maxChars = 700): string {
   if (text.length <= maxChars) return text
 
-  const sub = text.slice(0, maxChars)
-  const lastParagraphBreak = sub.lastIndexOf('\n\n')
+  const truncated = text.slice(0, maxChars)
+  const lastParagraphBreak = truncated.lastIndexOf('\n\n')
   if (lastParagraphBreak > Math.floor(maxChars * 0.65)) {
-    return `${sub.slice(0, lastParagraphBreak).trim()} [Resumo...]`
+    return `${truncated.slice(0, lastParagraphBreak).trim()} [Resumo...]`
   }
 
-  const lastLineBreak = sub.lastIndexOf('\n')
+  const lastLineBreak = truncated.lastIndexOf('\n')
   if (lastLineBreak > Math.floor(maxChars * 0.7)) {
-    return `${sub.slice(0, lastLineBreak).trim()} [Resumo...]`
+    return `${truncated.slice(0, lastLineBreak).trim()} [Resumo...]`
   }
 
-  const lastPeriod = sub.lastIndexOf('.')
+  const lastPeriod = truncated.lastIndexOf('.')
   if (lastPeriod > Math.floor(maxChars * 0.65)) {
-    return `${sub.slice(0, lastPeriod + 1).trim()} [Resumo...]`
+    return `${truncated.slice(0, lastPeriod + 1).trim()} [Resumo...]`
   }
 
-  return `${sub.trim()}...`
+  return `${truncated.trim()}...`
 }
 
 function escapeXml(value: string): string {
@@ -63,11 +63,11 @@ function buildStructuredContext(docs: DocChunk[]): string {
     .map(([type, items]) => {
       const docsText = items
         .map(
-          (d, i) =>
-            `<document index="${i + 1}" type="${escapeXml(type)}" url="${escapeXml(d.metadata.url)}">\n` +
-            `  <title>${escapeXml(d.metadata.title)}</title>\n` +
-            (d.metadata.breadcrumb ? `  <breadcrumb>${escapeXml(d.metadata.breadcrumb)}</breadcrumb>\n` : '') +
-            `  <content>${escapeXml(compressChunk(d.content))}</content>\n` +
+          (doc, index) =>
+            `<document index="${index + 1}" type="${escapeXml(type)}" url="${escapeXml(doc.metadata.url)}">\n` +
+            `  <title>${escapeXml(doc.metadata.title)}</title>\n` +
+            (doc.metadata.breadcrumb ? `  <breadcrumb>${escapeXml(doc.metadata.breadcrumb)}</breadcrumb>\n` : '') +
+            `  <content>${escapeXml(compressChunk(doc.content))}</content>\n` +
             `</document>`
         )
         .join('\n\n')
@@ -196,8 +196,8 @@ export function formatConversationHistory(
 
   selected.reverse()
 
-  return selected.map(m => ({
-    role: m.role === 'assistant' ? 'model' : 'user',
-    parts: [{ text: m.content }],
+  return selected.map(message => ({
+    role: message.role === 'assistant' ? 'model' : 'user',
+    parts: [{ text: message.content }],
   }))
 }

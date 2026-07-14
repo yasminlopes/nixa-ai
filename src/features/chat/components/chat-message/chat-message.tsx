@@ -118,13 +118,13 @@ export function ChatMessage({ message, isStreaming }: ChatMessageProps) {
   useEffect(() => {
     if (!isUser) return
     setUserAvatar(localStorage.getItem('nixa-user-avatar')?.trim() || null)
-    const n = localStorage.getItem('nixa-user-name')?.trim()
-    if (n) setUserName(n.slice(0, 1).toUpperCase())
+    const storedName = localStorage.getItem('nixa-user-name')?.trim()
+    if (storedName) setUserName(storedName.slice(0, 1).toUpperCase())
   }, [isUser])
 
   const content = message.content
   const sources = message.sources
-  const unique = sources ? sources.filter((s, i, arr) => arr.findIndex(x => x.url === s.url) === i) : []
+  const unique = sources ? sources.filter((source, index, array) => array.findIndex(other => other.url === source.url) === index) : []
   const isInterrupted = content === '__interrupted__'
 
   return (

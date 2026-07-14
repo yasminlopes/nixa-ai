@@ -1,107 +1,78 @@
-import clsx from 'clsx'
+import { ArrowDown, BookOpen, Brain, Sparkles } from 'lucide-react'
 import { SectionHeader } from '../section-header'
 import styles from './about-tab.module.scss'
 
-const ARCHITECTURE = [
-  { folder: 'core/', desc: 'Núcleo da aplicação — LLM adapters, embeddings, RAG pipeline, vectorstore, crawler, settings encryption. Zero dependência de UI.' },
-  { folder: 'features/', desc: 'Features de UI com padrão smart/dumb. Containers gerenciam estado e chamadas de API; components são presentacionais.' },
-  { folder: 'shared/', desc: 'Componentes, hooks, contextos, tipos e utilitários reutilizáveis entre features.' },
-  { folder: 'app/', desc: 'Next.js App Router — páginas, layouts e API routes.' },
+const STEPS = [
+  { icon: Brain,    title: 'Entendimento',       desc: 'A pergunta é analisada por modelos de IA para identificar intenção e contexto.' },
+  { icon: BookOpen, title: 'Busca inteligente',  desc: 'A Nixa encontra os trechos relevantes na base de conhecimento NICE/CXone.' },
+  { icon: Sparkles, title: 'Resposta contextual', desc: 'O modelo gera uma resposta fundamentada nas fontes encontradas, com citações.' },
 ]
 
-const STACK: Array<[string, string]> = [
-  ['Frontend', 'Next.js 16 · TypeScript · SCSS Modules'],
-  ['Tipografia', 'Inter · Bricolage Grotesque · JetBrains Mono'],
-  ['LLM', 'Gemini · OpenAI · Ollama'],
-  ['Embeddings', 'Gemini · OpenAI · Ollama'],
-  ['RAG', 'Crawler + chunk + busca híbrida + expansão PT→EN'],
-  ['Vector store', 'JSON local com cosine + léxico'],
-  ['Segurança', 'AES-256-GCM'],
-  ['Seeds', '90+ URLs NICE/CXone'],
-]
-
-const FLOW_INGEST = ['docs', 'crawler', 'chunks', 'embeddings', 'vectorstore']
-const FLOW_QUERY = ['pergunta', 'retrieval', 'contexto', 'LLM', 'resposta']
-
-const ENV_VARS: Array<[string, string]> = [
-  ['SETTINGS_ENCRYPTION_KEY', 'Obrigatória — deriva a chave AES-256-GCM que criptografa as API keys no servidor'],
-  ['GEMINI_API_KEY', 'Opcional — fallback compartilhado do site, caso ninguém tenha salvo uma chave'],
-  ['OLLAMA_BASE_URL', 'Default http://localhost:11434'],
-  ['OLLAMA_MODEL', 'Default llama3.2:1b'],
-  ['OLLAMA_EMBEDDING_MODEL', 'Default all-minilm'],
+const TECH_GROUPS: Array<{ label: string; items: string[] }> = [
+  { label: 'Frontend',     items: ['Next.js', 'TypeScript', 'SCSS Modules'] },
+  { label: 'IA',           items: ['Gemini', 'OpenAI', 'Ollama'] },
+  { label: 'Conhecimento', items: ['RAG', 'Embeddings', 'Vector Store'] },
+  { label: 'Segurança',    items: ['AES-256-GCM'] },
 ]
 
 export function AboutTab() {
   return (
     <div className={styles.wrapper}>
-      <SectionHeader eyebrow="Bastidores" title="Sobre o projeto." subtitle="Arquitetura e stack da Nixa AI." />
+      <SectionHeader
+        eyebrow="Assistente de IA"
+        title="Sobre a Nixa."
+        subtitle="Uma assistente inteligente especializada em NICE e CXone."
+      />
 
-      {/* Architecture */}
-      <div className={styles.card}>
-        <p className={styles.cardLabel}>Arquitetura</p>
-        <div className={styles.archList}>
-          {ARCHITECTURE.map(({ folder, desc }) => (
-            <div key={folder} className={styles.archRow}>
-              <span className={styles.archTag}>{folder}</span>
-              <p className={styles.archDesc}>{desc}</p>
+      <p className={styles.lead}>
+        A Nixa usa inteligência artificial, busca semântica e conhecimento contextual para responder
+        perguntas com base na documentação oficial da plataforma NICE/CXone.
+      </p>
+
+      {/* Como funciona */}
+      <section className={styles.section}>
+        <h3 className={styles.sectionTitle}>Como funciona</h3>
+        <div className={styles.steps}>
+          {STEPS.map(({ icon: Icon, title, desc }, i) => (
+            <div key={title} className={styles.stepItem}>
+              <div className={styles.stepCard}>
+                <div className={styles.stepIcon}>
+                  <Icon size={18} strokeWidth={2} aria-hidden="true" />
+                </div>
+                <div>
+                  <p className={styles.stepTitle}>{title}</p>
+                  <p className={styles.stepDesc}>{desc}</p>
+                </div>
+              </div>
+              {i < STEPS.length - 1 && (
+                <ArrowDown size={16} className={styles.stepArrow} aria-hidden="true" />
+              )}
             </div>
           ))}
         </div>
-      </div>
+      </section>
 
-      {/* Stack */}
-      <div className={styles.card}>
-        <p className={styles.cardLabel}>Stack</p>
-        <div className={styles.stackGrid}>
-          {STACK.map(([k, v]) => (
-            <div key={k} className={styles.stackItem}>
-              <span className={styles.stackKey}>{k}</span>
-              <span className={styles.stackValue}>{v}</span>
+      {/* Tecnologias */}
+      <section className={styles.section}>
+        <h3 className={styles.sectionTitle}>Tecnologias</h3>
+        <div className={styles.techGroups}>
+          {TECH_GROUPS.map(({ label, items }) => (
+            <div key={label} className={styles.techGroup}>
+              <span className={styles.techGroupLabel}>{label}</span>
+              <div className={styles.chips}>
+                {items.map(item => (
+                  <span key={item} className={styles.chip}>{item}</span>
+                ))}
+              </div>
             </div>
           ))}
         </div>
-      </div>
+      </section>
 
-      {/* Flow */}
-      <div className={styles.card}>
-        <p className={styles.cardLabel}>Fluxo RAG</p>
-        <div className={styles.flowRow}>
-          {FLOW_INGEST.map((step, i, arr) => (
-            <span key={step} className={styles.flowStep}>
-              <span className={styles.flowTag}>{step}</span>
-              {i < arr.length - 1 && <span className={styles.flowArrow}>→</span>}
-            </span>
-          ))}
-        </div>
-        <div className={styles.flowRow}>
-          {FLOW_QUERY.map((step, i, arr) => (
-            <span key={step} className={styles.flowStep}>
-              <span className={clsx(styles.flowTag, (i === 1 || i === arr.length - 1) && styles.flowTagHighlight)}>
-                {step}
-              </span>
-              {i < arr.length - 1 && <span className={styles.flowArrow}>→</span>}
-            </span>
-          ))}
-        </div>
-      </div>
-
-      {/* Env */}
-      <div className={styles.card}>
-        <p className={styles.cardLabel}>Variáveis de ambiente</p>
-        <div className={styles.envList}>
-          {ENV_VARS.map(([key, desc]) => (
-            <div key={key} className={styles.envRow}>
-              <code className={styles.envKey}>{key}</code>
-              <span className={styles.envDesc}>{desc}</span>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Credits */}
-      <div className={clsx(styles.card, styles.credits)}>
+      {/* Créditos */}
+      <div className={styles.credits}>
         <div>
-          <p className={styles.creditsLabel}>Desenvolvido por</p>
+          <p className={styles.creditsLabel}>Criado por</p>
           <p className={styles.creditsName}>Yasmin Lopes</p>
         </div>
         <a

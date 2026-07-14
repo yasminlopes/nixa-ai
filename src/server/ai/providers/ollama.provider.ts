@@ -15,7 +15,7 @@ function getModel(): string {
 function toFlatHistory(messages: Message[]): Array<{ role: 'user' | 'assistant'; content: string }> {
   return messages
     .slice(-10)
-    .map(m => ({ role: m.role === 'assistant' ? 'assistant' : 'user', content: m.content }))
+    .map(message => ({ role: message.role === 'assistant' ? 'assistant' : 'user', content: message.content }))
 }
 
 export async function* runOllamaChat(params: LLMParams): AsyncIterable<string> {
@@ -28,9 +28,9 @@ export async function* runOllamaChat(params: LLMParams): AsyncIterable<string> {
     { role: 'user', content: params.userMessage },
   ]
 
-  let res: Response
+  let response: Response
   try {
-    res = await fetch(`${baseUrl}/api/chat`, {
+    response = await fetch(`${baseUrl}/api/chat`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -41,20 +41,20 @@ export async function* runOllamaChat(params: LLMParams): AsyncIterable<string> {
       }),
       signal: AbortSignal.timeout(120000),
     })
-  } catch (err) {
-    const msg = err instanceof Error ? err.message : String(err)
-    if (msg.includes('ECONNREFUSED') || msg.includes('fetch failed')) {
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error)
+    if (message.includes('ECONNREFUSED') || message.includes('fetch failed')) {
       throw new Error(`Ollama não responde em ${baseUrl}. Rode "ollama serve" e "ollama pull ${model}".`)
     }
-    throw err
+    throw error
   }
 
-  if (!res.ok) {
-    const body = await res.text().catch(() => '')
-    throw new Error(`Ollama chat failed (${res.status}): ${body.slice(0, 200)}`)
+  if (!response.ok) {
+    const body = await response.text().catch(() => '')
+    throw new Error(`Ollama chat failed (${response.status}): ${body.slice(0, 200)}`)
   }
 
-  const reader = res.body?.getReader()
+  const reader = response.body?.getReader()
   if (!reader) throw new Error('No response body from Ollama')
 
   const decoder = new TextDecoder()
@@ -81,9 +81,8 @@ export async function* runOllamaChat(params: LLMParams): AsyncIterable<string> {
           if (json.error) throw new Error(`Ollama: ${json.error}`)
           const content = json.message?.content
           if (content) yield content
-        } catch (e) {
-          if (e instanceof Error && e.message.startsWith('Ollama:')) throw e
-          // ignore malformed stream lines
+        } catch (error) {
+          if (error instanceof Error && error.message.startsWith('Ollama:')) throw error
         }
       }
     }
